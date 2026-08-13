@@ -26,6 +26,14 @@ jobs:
           flutter-version: '3.19.0'
           channel: 'stable'
 
+      # الخطوة السحرية: إنشاء هيكل مشروع أندرويد كاملاً في السيرفر تلقائياً
+      - name: Generate Android Native Project Structure
+        run: |
+          mkdir temp_app
+          flutter create --org com.example --project-name smart_academic_assistant temp_app
+          cp -r temp_app/android ./android
+          rm -rf temp_app
+
       - name: Install dependencies
         run: flutter pub get
 
