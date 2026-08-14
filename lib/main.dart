@@ -1,9 +1,15 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package0:file_picker/file_picker.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart'; // لقراءة ملفات الـ PDF
+import 'package:http/http.dart' as http; // للاتصال بـ Gemini API
+
+// ⚠️ حطي مفتاح Gemini API بتاعك هنا
+const String geminiApiKey = 'YOUR_GEMINI_API_KEY';
 
 // -----------------------------------------------------------------------------
 // 1. نماذج البيانات (CourseFile & Course & ChatMessage)
@@ -71,8 +77,76 @@ class ChatMessage {
 }
 
 // -----------------------------------------------------------------------------
-// دالة التشغيل الرئيسية وبداية التطبيق
+// دالة استخراج النص الحقيقي من ملفات PDF
 // -----------------------------------------------------------------------------
+Future<String> extractTextFromFiles(List<CourseFile> files) async {
+  StringBuffer fullText = StringBuffer();
+
+  for (var file in files) {
+    try {
+      if (file.path.endsWith('.pdf')) {
+        final File pdfFile = File(file.path);
+        final List<int> bytes = await pdfFile.readAsBytes();
+        final PdfDocument document = PdfDocument(inputBytes: bytes);
+        String text = PdfTextExtractor(document).extractText();
+        document.dispose();
+
+        fullText.writeln('--- محتوى الملف: ${file.name} ---');
+        fullText.writeln(text);
+      } else {
+        fullText.writeln('--- ملف: ${file.name} (اسم الملف كمرجع) ---');
+      }
+    } catch (e) {
+      debugPrint('خطأ أثناء قراءة الملف ${file.name}: $e');
+    }
+  }
+
+  return fullText.toString();
+}
+
+// -----------------------------------------------------------------------------
+// دالة إرسال النص والسؤال لـ Gemini API للحصول على إجابة حقيقية
+// -----------------------------------------------------------------------------
+Future<String> getGeminiResponse(String prompt, String contextText) async {
+  if (geminiApiKey == 'YOUR_GEMINI_API_KEY' || geminiApiKey.isEmpty) {
+    return 'يرجى إدخال مفتاح Gemini API الخاص بك في الكود للبدء في توليد الإجابات الذكية.';
+  }
+
+  final url = Uri.parse(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$geminiApiKey');
+
+  final systemInstruction =
+      'أنت مساعد أكاديمي ذكي. أجب على سؤال الطالب بناءً على المحتوى المستخرج من ملفات المحاضرات التالية فقط بأسلوب واضح ودقيق باللغة العربية:\n\n$contextText';
+
+  final body = jsonEncode({
+    'contents': [
+      {
+        'parts': [
+          {'text': '$systemInstruction\n\nسؤال الطالب: $prompt'}
+        ]
+      }
+    ]
+  });
+
+  try {
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: body,
+    );
+
+    if (response.statusCode == 200) {
+      final jsonResponse = jsonDecode(response.body);
+      final reply = jsonResponse['candidates'][0]['content']['parts'][0]['text'];
+      return reply;
+    } else {
+      return 'حدث خطأ أثناء التواصل مع الذكاء الاصطناعي (${response.statusCode}).';
+    }
+  } catch (e) {
+    return 'تعذر الاتصال بالشبكة لتقييم المحتوى: $e';
+  }
+}
+
 void main() {
   runApp(const SmartAcademicAssistantApp());
 }
@@ -90,20 +164,15 @@ class SmartAcademicAssistantApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('ar', ''),
-      ],
+      supportedLocales: const [Locale('ar', '')],
       locale: const Locale('ar', ''),
-      theme: ThemeData(
-        primarySwatch: Colors.indigo,
-        useMaterial3: true,
-      ),
+      theme: ThemeData(primarySwatch: Colors.indigo, useMaterial3: true),
       home: const SetupScreen(),
     );
   }
 }
 // -----------------------------------------------------------------------------
-// 2. شاشة الإعداد الأولية (القوائم المنسدلة للكلية والقسم والسمستر)
+// 2. شاشة الإعداد الأولية (نفس التصميم تماماً بدون أي تغيير)
 // -----------------------------------------------------------------------------
 class SetupScreen extends StatefulWidget {
   const SetupScreen({super.key});
@@ -173,8 +242,6 @@ class _SetupScreenState extends State<SetupScreen> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 25),
-
-              // قائمة الكلية
               DropdownButtonFormField<String>(
                 value: selectedFaculty,
                 decoration: const InputDecoration(
@@ -183,10 +250,7 @@ class _SetupScreenState extends State<SetupScreen> {
                   prefixIcon: Icon(Icons.school, color: Colors.indigo),
                 ),
                 items: academicData.keys
-                    .map((fac) => DropdownMenuItem(
-                          value: fac,
-                          child: Text(fac),
-                        ))
+                    .map((fac) => DropdownMenuItem(value: fac, child: Text(fac)))
                     .toList(),
                 onChanged: (value) {
                   if (value != null) {
@@ -200,8 +264,6 @@ class _SetupScreenState extends State<SetupScreen> {
                 },
               ),
               const SizedBox(height: 20),
-
-              // قائمة القسم
               DropdownButtonFormField<String>(
                 value: selectedDepartment,
                 decoration: const InputDecoration(
@@ -210,18 +272,11 @@ class _SetupScreenState extends State<SetupScreen> {
                   prefixIcon: Icon(Icons.domain, color: Colors.indigo),
                 ),
                 items: availableDepartments
-                    .map((dept) => DropdownMenuItem(
-                          value: dept,
-                          child: Text(dept),
-                        ))
+                    .map((dept) => DropdownMenuItem(value: dept, child: Text(dept)))
                     .toList(),
-                onChanged: (value) {
-                  setState(() => selectedDepartment = value);
-                },
+                onChanged: (value) => setState(() => selectedDepartment = value),
               ),
               const SizedBox(height: 20),
-
-              // قائمة السمستر
               DropdownButtonFormField<int>(
                 value: selectedSemester > maxSemesters ? 1 : selectedSemester,
                 decoration: const InputDecoration(
@@ -237,14 +292,10 @@ class _SetupScreenState extends State<SetupScreen> {
                         ))
                     .toList(),
                 onChanged: (value) {
-                  if (value != null) {
-                    setState(() => selectedSemester = value);
-                  }
+                  if (value != null) setState(() => selectedSemester = value);
                 },
               ),
               const SizedBox(height: 35),
-
-              // زر الدخول للتطبيق
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -284,7 +335,7 @@ class _SetupScreenState extends State<SetupScreen> {
   }
 }
 // -----------------------------------------------------------------------------
-// 3. الشاشة الرئيسية للتطبيق + واجهة الشات الذكي المرتبطة بالملفات
+// 3. الشاشة الرئيسية والشات الذي يجيب إجابة حقيقية من المحتوى
 // -----------------------------------------------------------------------------
 class MainDashboardScreen extends StatefulWidget {
   final String faculty;
@@ -306,6 +357,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
   int _currentIndex = 0;
   List<Course> courses = [];
   Course? selectedChatCourse;
+  bool _isLoadingResponse = false;
   final TextEditingController _chatController = TextEditingController();
   final List<ChatMessage> _messages = [
     ChatMessage(
@@ -320,7 +372,6 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
     _loadCourses();
   }
 
-  // حفظ واسترجاع المقررات
   Future<void> _loadCourses() async {
     final prefs = await SharedPreferences.getInstance();
     final String? saveData = prefs.getString('courses_data');
@@ -342,7 +393,6 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
     await prefs.setString('courses_data', encodedData);
   }
 
-  // إدراج وحذف الملفات
   Future<void> _pickFileForCourse(Course course) async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -380,48 +430,58 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
     }
   }
 
-  // إرسال رسالة في الشات
-  void _sendMessage() {
-    if (_chatController.text.trim().isEmpty) return;
+  // إرسال السؤال وقراءة الملفات الحقيقية للإجابة
+  Future<void> _sendMessage() async {
+    if (_chatController.text.trim().isEmpty || _isLoadingResponse) return;
 
     final query = _chatController.text;
     setState(() {
-      _messages.add(ChatMessage(
-        text: query,
-        isUser: true,
-      ));
+      _messages.add(ChatMessage(text: query, isUser: true));
       _chatController.clear();
+      _isLoadingResponse = true;
     });
 
-    // المحاكاة الذكية للرد بناءً على الملفات المرفقة
-    Future.delayed(const Duration(milliseconds: 800), () {
-      if (!mounted) return;
+    if (selectedChatCourse == null) {
       setState(() {
-        if (selectedChatCourse == null) {
-          _messages.add(ChatMessage(
-            text: 'يرجى اختيار المقرر الدراسي أولاً من القائمة المنسدلة بالأعلى لكي أتمكن من إجابتك من واقع ملفاتك.',
-            isUser: false,
-          ));
-        } else if (selectedChatCourse!.files.isEmpty) {
-          _messages.add(ChatMessage(
-            text: 'لم تقمي بإدراج أي ملفات أو محاضرات لمقرر "${selectedChatCourse!.name}" بعد. قومي بإدراج ملف PDF أو PowerPoint من تبويب تفاصيل المقرر ليتمكن الذكاء الاصطناعي من قراءته والإجابة منه.',
-            isUser: false,
-            sourceCourse: selectedChatCourse!.name,
-          ));
-        } else {
-          final fileNames =
-              selectedChatCourse!.files.map((f) => f.name).join(' ، ');
-          _messages.add(ChatMessage(
-            text: 'تم تحليل الملفات المرفقة لمقرر (${selectedChatCourse!.name}): [$fileNames].\n\nبناءً على المحاضرات المرفوعة، الإجابة على استفسارك حول "$query": تم الاستخراج والتأكيد بنجاح من المادة العلمية.',
-            isUser: false,
-            sourceCourse: selectedChatCourse!.name,
-          ));
-        }
+        _messages.add(ChatMessage(
+          text: 'يرجى اختيار المقرر الدراسي أولاً من القائمة بالأعلى.',
+          isUser: false,
+        ));
+        _isLoadingResponse = false;
       });
+      return;
+    }
+
+    if (selectedChatCourse!.files.isEmpty) {
+      setState(() {
+        _messages.add(ChatMessage(
+          text: 'لم تقمي بإدراج أي ملفات لمقرر "${selectedChatCourse!.name}" بعد.',
+          isUser: false,
+          sourceCourse: selectedChatCourse!.name,
+        ));
+        _isLoadingResponse = false;
+      });
+      return;
+    }
+
+    // 1. استخراج النصوص الحقيقية من ملفات المقرر
+    String extractedContext =
+        await extractTextFromFiles(selectedChatCourse!.files);
+
+    // 2. طلب الإجابة من الذكاء الاصطناعي بناءً على محتوى الملفات
+    String aiAnswer = await getGeminiResponse(query, extractedContext);
+
+    if (!mounted) return;
+    setState(() {
+      _messages.add(ChatMessage(
+        text: aiAnswer,
+        isUser: false,
+        sourceCourse: selectedChatCourse!.name,
+      ));
+      _isLoadingResponse = false;
     });
   }
 
-  // نافذة إضافة مقرر جديد
   void _showAddCourseDialog() {
     final nameController = TextEditingController();
     final hoursController = TextEditingController();
@@ -496,7 +556,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
         index: _currentIndex,
         children: [
           _buildCourseDetailsTab(),
-          _buildSmartChatTab(), // شاشة الشات الذكي الجديدة المكتملة
+          _buildSmartChatTab(),
           const Center(child: Text('مقياس المذاكرة (قريباً)')),
         ],
       ),
@@ -531,7 +591,6 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
     );
   }
 
-  // واجهة تفاصيل المقررات (لم تتغير)
   Widget _buildCourseDetailsTab() {
     if (courses.isEmpty) {
       return const Center(
@@ -626,11 +685,9 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
     );
   }
 
-  // واجهة الشات الذكي الجديدة المرتبطة بملفات المقررات
   Widget _buildSmartChatTab() {
     return Column(
       children: [
-        // اختيار المقرر المراد السؤال فيه
         Container(
           color: Colors.indigo.shade50,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -664,8 +721,6 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
             ],
           ),
         ),
-
-        // قائمة الرسائل
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
@@ -694,8 +749,11 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
             },
           ),
         ),
-
-        // شريط كتابة السؤال
+        if (_isLoadingResponse)
+          const Padding(
+            padding: EdgeInsets.all(8.0),
+            child: CircularProgressIndicator(),
+          ),
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
