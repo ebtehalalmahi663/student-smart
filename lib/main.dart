@@ -5,6 +5,141 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
 
 // -----------------------------------------------------------------------------
+// دالة التشغيل الرئيسية وبداية التطبيق
+// -----------------------------------------------------------------------------
+void main() {
+  runApp(const SmartAcademicAssistantApp());
+}
+
+class SmartAcademicAssistantApp extends StatelessWidget {
+  const SmartAcademicAssistantApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'المساعد الأكاديمي الذكي',
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('ar', ''), // دعم اللغة العربية
+      ],
+      locale: const Locale('ar', ''),
+      theme: ThemeData(
+        primarySwatch: Colors.indigo,
+        useMaterial3: true,
+      ),
+      home: const SetupScreen(),
+    );
+  }
+}
+
+// -----------------------------------------------------------------------------
+// شاشة الإعداد الأولية (تحديد الكلية، القسم، والسمستر)
+// -----------------------------------------------------------------------------
+class SetupScreen extends StatefulWidget {
+  const SetupScreen({super.key});
+
+  @override
+  State<SetupScreen> createState() => _SetupScreenState();
+}
+
+class _SetupScreenState extends State<SetupScreen> {
+  final _facultyController = TextEditingController(text: 'الحاسوب وتقانة المعلومات');
+  final _departmentController = TextEditingController(text: 'علوم الحاسوب');
+  int _selectedSemester = 1;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('إعداد المساعد الأكاديمي'),
+        backgroundColor: Colors.indigo,
+        foregroundColor: Colors.white,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'مرحباً بك! يرجى إدخال البيانات الأكاديمية:',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _facultyController,
+                decoration: const InputDecoration(
+                  labelText: 'الكلية',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 15),
+              TextField(
+                controller: _departmentController,
+                decoration: const InputDecoration(
+                  labelText: 'القسم / التخصص',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 15),
+              DropdownButtonFormField<int>(
+                value: _selectedSemester,
+                decoration: const InputDecoration(
+                  labelText: 'السمستر الحالي',
+                  border: OutlineInputBorder(),
+                ),
+                items: List.generate(10, (index) => index + 1)
+                    .map((sem) => DropdownMenuItem(
+                          value: sem,
+                          child: Text('السمستر $sem'),
+                        ))
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _selectedSemester = value);
+                  }
+                },
+              ),
+              const SizedBox(height: 30),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.indigo,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () {
+                    if (_facultyController.text.isNotEmpty &&
+                        _departmentController.text.isNotEmpty) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MainDashboardScreen(
+                            faculty: _facultyController.text,
+                            department: _departmentController.text,
+                            semester: _selectedSemester,
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text('الدخول للتطبيق', style: TextStyle(fontSize: 16)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+// -----------------------------------------------------------------------------
 // الشاشة الرئيسية الشاملة (تضم 3 شاشات في تبويبات مع حفظ دائم للبيانات)
 // -----------------------------------------------------------------------------
 class MainDashboardScreen extends StatefulWidget {
@@ -30,13 +165,11 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _loadSavedCourses(); // تحميل المقررات المحفوظة فور فتح الشاشة
+    _loadSavedCourses();
   }
 
-  // مفتاح التخزين الخاص بالقسم والسمستر الحالي
   String get _storageKey => 'courses_${widget.faculty}_${widget.department}_${widget.semester}';
 
-  // تحميل المقررات من ذاكرة الهاتف
   Future<void> _loadSavedCourses() async {
     final prefs = await SharedPreferences.getInstance();
     final String? savedData = prefs.getString(_storageKey);
@@ -48,7 +181,6 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
     }
   }
 
-  // حفظ المقررات في ذاكرة الهاتف بشكل دائم
   Future<void> _saveCourses() async {
     final prefs = await SharedPreferences.getInstance();
     final String encodedData = jsonEncode(courses);
@@ -64,13 +196,13 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
           setState(() {
             courses.add(course);
           });
-          _saveCourses(); // حفظ فور الإضافة
+          _saveCourses();
         },
         onAddFile: (courseIndex, fileName) {
           setState(() {
             courses[courseIndex]['files'].add(fileName);
           });
-          _saveCourses(); // حفظ فور إدراج الملف
+          _saveCourses();
         },
       ),
       SmartChatTab(courses: courses),
@@ -123,7 +255,6 @@ class CourseDetailsTab extends StatelessWidget {
     required this.onAddFile,
   });
 
-  // دالة فتح متصفح ملفات الموبايل الحقيقي
   Future<void> _pickRealFile(BuildContext context, int courseIndex) async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -297,6 +428,147 @@ class CourseDetailsTab extends StatelessWidget {
                 );
               },
             ),
+    );
+  }
+}
+// -----------------------------------------------------------------------------
+// التبويب الثاني: الشات الذكي (SmartChatTab)
+// -----------------------------------------------------------------------------
+class SmartChatTab extends StatefulWidget {
+  final List<Map<String, dynamic>> courses;
+
+  const SmartChatTab({super.key, required this.courses});
+
+  @override
+  State<SmartChatTab> createState() => _SmartChatTabState();
+}
+
+class _SmartChatTabState extends State<SmartChatTab> {
+  final List<Map<String, String>> messages = [];
+  final TextEditingController _controller = TextEditingController();
+
+  void _sendMessage() {
+    if (_controller.text.trim().isEmpty) return;
+    final userMsg = _controller.text;
+    setState(() {
+      messages.add({'sender': 'user', 'text': userMsg});
+      messages.add({
+        'sender': 'ai',
+        'text': 'أنا مساعدك الأكاديمي الذكي. قرأت استفسارك حول ($userMsg)، وستتم الإجابة بناءً على المقررات المرفقة عندك!'
+      });
+    });
+    _controller.clear();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Expanded(
+          child: messages.isEmpty
+              ? const Center(
+                  child: Text('ابدأ المحادثة وسؤال المساعد الذكي عن أي جزئية.'),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(10),
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final isUser = messages[index]['sender'] == 'user';
+                    return Align(
+                      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(vertical: 5),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isUser ? Colors.indigo.shade100 : Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(messages[index]['text'] ?? ''),
+                      ),
+                    );
+                  },
+                ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _controller,
+                  decoration: const InputDecoration(
+                    hintText: 'اكتب سؤالك هنا...',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.send, color: Colors.indigo),
+                onPressed: _sendMessage,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// -----------------------------------------------------------------------------
+// التبويب الثالث: مولد الاختبارات (QuizGeneratorTab)
+// -----------------------------------------------------------------------------
+class QuizGeneratorTab extends StatefulWidget {
+  final List<Map<String, dynamic>> courses;
+
+  const QuizGeneratorTab({super.key, required this.courses});
+
+  @override
+  State<QuizGeneratorTab> createState() => _QuizGeneratorTabState();
+}
+
+class _QuizGeneratorTabState extends State<QuizGeneratorTab> {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.quiz, size: 80, color: Colors.indigo),
+            const SizedBox(height: 15),
+            const Text(
+              'مقياس المذاكرة والاختبارات الذكية',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              widget.courses.isEmpty
+                  ? 'يرجى إضافة مقررات أولاً للبدء في توليد الأسئلة.'
+                  : 'عدد المقررات المتاحة لتوليد الأسئلة: ${widget.courses.length}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.indigo,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: widget.courses.isEmpty
+                  ? null
+                  : () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('جاري إنشاء اختبار تجريبي للمقررات...'),
+                        ),
+                      );
+                    },
+              child: const Text('توليد اختبار تجريبي'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
