@@ -3,6 +3,46 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package0:open_filex/open_filex.dart'; // حزمة فتح الملفات
+
+// -----------------------------------------------------------------------------
+// 1. نموذج البيانات للمقرر الدراسي (Course Model)
+// -----------------------------------------------------------------------------
+class Course {
+  String id;
+  String name;
+  int creditHours;
+  String labTools;
+  String? fileName;
+  String? filePath;
+
+  Course({
+    required this.id,
+    required this.name,
+    required this.creditHours,
+    required this.labTools,
+    this.fileName,
+    this.filePath,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'creditHours': creditHours,
+        'labTools': labTools,
+        'fileName': fileName,
+        'filePath': filePath,
+      };
+
+  factory Course.fromJson(Map<String, dynamic> json) => Course(
+        id: json['id'],
+        name: json['name'],
+        creditHours: json['creditHours'],
+        labTools: json['labTools'],
+        fileName: json['fileName'],
+        filePath: json['filePath'],
+      );
+}
 
 // -----------------------------------------------------------------------------
 // دالة التشغيل الرئيسية وبداية التطبيق
@@ -25,7 +65,7 @@ class SmartAcademicAssistantApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: const [
-        Locale('ar', ''), // دعم اللغة العربية
+        Locale('ar', ''),
       ],
       locale: const Locale('ar', ''),
       theme: ThemeData(
@@ -36,9 +76,8 @@ class SmartAcademicAssistantApp extends StatelessWidget {
     );
   }
 }
-
 // -----------------------------------------------------------------------------
-// شاشة الإعداد الأولية (قوائم منسدلة معتمدة على بيانات الكلية والقسم)
+// 2. شاشة الإعداد الأولية (القوائم المنسدلة للكلية والقسم والسمستر)
 // -----------------------------------------------------------------------------
 class SetupScreen extends StatefulWidget {
   const SetupScreen({super.key});
@@ -48,7 +87,6 @@ class SetupScreen extends StatefulWidget {
 }
 
 class _SetupScreenState extends State<SetupScreen> {
-  // بيانات الكليات والأقسام وعدد السمسترات الخاصة بكل كلية
   final Map<String, Map<String, dynamic>> academicData = {
     'علوم الحاسوب وتقانة المعلومات': {
       'semesters': 10,
@@ -81,16 +119,15 @@ class _SetupScreenState extends State<SetupScreen> {
   @override
   void initState() {
     super.initState();
-    // تعيين الكلية الأولى افتراضياً وتحديد أقسامها
     selectedFaculty = academicData.keys.first;
     selectedDepartment = academicData[selectedFaculty]!['departments'].first;
   }
 
   @override
   Widget build(BuildContext context) {
-    // جلب الأقسام والسمسترات المتاحة للكلية المختارة حالياً
     final currentFacultyInfo = academicData[selectedFaculty]!;
-    final List<String> availableDepartments = List<String>.from(currentFacultyInfo['departments']);
+    final List<String> availableDepartments =
+        List<String>.from(currentFacultyInfo['departments']);
     final int maxSemesters = currentFacultyInfo['semesters'];
 
     return Scaffold(
@@ -111,7 +148,7 @@ class _SetupScreenState extends State<SetupScreen> {
               ),
               const SizedBox(height: 25),
 
-              // 1. قائمة منسدلة للكلية
+              // قائمة الكلية
               DropdownButtonFormField<String>(
                 value: selectedFaculty,
                 decoration: const InputDecoration(
@@ -129,8 +166,8 @@ class _SetupScreenState extends State<SetupScreen> {
                   if (value != null) {
                     setState(() {
                       selectedFaculty = value;
-                      // تحديث القسم للقسم الأول في الكلية الجديدة وتصفير السمستر لـ 1
-                      selectedDepartment = academicData[value]!['departments'].first;
+                      selectedDepartment =
+                          academicData[value]!['departments'].first;
                       selectedSemester = 1;
                     });
                   }
@@ -138,7 +175,7 @@ class _SetupScreenState extends State<SetupScreen> {
               ),
               const SizedBox(height: 20),
 
-              // 2. قائمة منسدلة للقسم (تتغير ديناميكياً حسب الكلية)
+              // قائمة القسم
               DropdownButtonFormField<String>(
                 value: selectedDepartment,
                 decoration: const InputDecoration(
@@ -158,13 +195,14 @@ class _SetupScreenState extends State<SetupScreen> {
               ),
               const SizedBox(height: 20),
 
-              // 3. قائمة منسدلة للسمستر (يتعدل عدد السمسترات حسب الكلية)
+              // قائمة السمستر
               DropdownButtonFormField<int>(
                 value: selectedSemester > maxSemesters ? 1 : selectedSemester,
                 decoration: const InputDecoration(
                   labelText: 'السمستر الحالي',
                   border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.format_list_numbered, color: Colors.indigo),
+                  prefixIcon:
+                      Icon(Icons.format_list_numbered, color: Colors.indigo),
                 ),
                 items: List.generate(maxSemesters, (index) => index + 1)
                     .map((sem) => DropdownMenuItem(
@@ -220,7 +258,7 @@ class _SetupScreenState extends State<SetupScreen> {
   }
 }
 // -----------------------------------------------------------------------------
-// الشاشة الرئيسية الشاملة (تضم 3 شاشات في تبويبات مع حفظ دائم للبيانات)
+// 3. الشاشة الرئيسية للتطبيق (Main Dashboard)
 // -----------------------------------------------------------------------------
 class MainDashboardScreen extends StatefulWidget {
   final String faculty;
@@ -240,140 +278,76 @@ class MainDashboardScreen extends StatefulWidget {
 
 class _MainDashboardScreenState extends State<MainDashboardScreen> {
   int _currentIndex = 0;
-  List<Map<String, dynamic>> courses = [];
+  List<Course> courses = [];
 
   @override
   void initState() {
     super.initState();
-    _loadSavedCourses();
+    _loadCourses();
   }
 
-  String get _storageKey => 'courses_${widget.faculty}_${widget.department}_${widget.semester}';
-
-  Future<void> _loadSavedCourses() async {
+  // حفظ واسترجاع المقررات
+  Future<void> _loadCourses() async {
     final prefs = await SharedPreferences.getInstance();
-    final String? savedData = prefs.getString(_storageKey);
-    if (savedData != null) {
+    final String? saveData = prefs.getString('courses_data');
+    if (saveData != null) {
+      final List<dynamic> decodedList = jsonDecode(saveData);
       setState(() {
-        List<dynamic> decodedList = jsonDecode(savedData);
-        courses = decodedList.map((item) => Map<String, dynamic>.from(item)).toList();
+        courses = decodedList.map((item) => Course.fromJson(item)).toList();
       });
     }
   }
 
   Future<void> _saveCourses() async {
     final prefs = await SharedPreferences.getInstance();
-    final String encodedData = jsonEncode(courses);
-    await prefs.setString(_storageKey, encodedData);
+    final String encodedData =
+        jsonEncode(courses.map((c) => c.toJson()).toList());
+    await prefs.setString('courses_data', encodedData);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final List<Widget> screens = [
-      CourseDetailsTab(
-        courses: courses,
-        onAddCourse: (course) {
-          setState(() {
-            courses.add(course);
-          });
-          _saveCourses();
-        },
-        onAddFile: (courseIndex, fileName) {
-          setState(() {
-            courses[courseIndex]['files'].add(fileName);
-          });
-          _saveCourses();
-        },
-      ),
-      SmartChatTab(courses: courses),
-      QuizGeneratorTab(courses: courses),
-    ];
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('${widget.department} - سمستر ${widget.semester}'),
-        backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
-      ),
-      body: screens[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        selectedItemColor: Colors.indigo,
-        unselectedItemColor: Colors.grey,
-        onTap: (index) => setState(() => _currentIndex = index),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.book),
-            label: 'تفاصيل المقرر',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble),
-            label: 'الشات الذكي',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.quiz),
-            label: 'مقياس المذاكرة',
-          ),
-        ],
-      ),
+  // إدراج ملف المحاضرة
+  Future<void> _pickFileForCourse(Course course) async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'doc', 'docx', 'ppt', 'pptx'],
     );
+
+    if (result != null && result.files.single.path != null) {
+      setState(() {
+        course.fileName = result.files.single.name;
+        course.filePath = result.files.single.path;
+      });
+      await _saveCourses();
+    }
   }
-}
 
-// -----------------------------------------------------------------------------
-// التبويب الأول: تفاصيل المقرر (مع اختيار ملفات حقيقية وحفظ)
-// -----------------------------------------------------------------------------
-class CourseDetailsTab extends StatelessWidget {
-  final List<Map<String, dynamic>> courses;
-  final Function(Map<String, dynamic>) onAddCourse;
-  final Function(int, String) onAddFile;
-
-  const CourseDetailsTab({
-    super.key,
-    required this.courses,
-    required this.onAddCourse,
-    required this.onAddFile,
-  });
-
-  Future<void> _pickRealFile(BuildContext context, int courseIndex) async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['pdf', 'doc', 'docx', 'ppt', 'pptx'],
-      );
-
-      if (result != null && result.files.single.name.isNotEmpty) {
-        String fileName = result.files.single.name;
-        onAddFile(courseIndex, fileName);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('تم إدراج الملف الحقيقي: $fileName'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (context.mounted) {
+  // دالة فتح الملف وقراءة محتواه عند الضغط
+  Future<void> _openCourseFile(String? filePath) async {
+    if (filePath != null && filePath.isNotEmpty) {
+      final result = await OpenFilex.open(filePath);
+      if (result.type != ResultType.done && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تعذر فتح متصفح الملفات، يرجى التحقق من الصلاحيات.'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('تعذر فتح الملف: ${result.message}')),
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('مسار الملف غير متوفر أو تم حذفه')),
         );
       }
     }
   }
 
-  void _showAddCourseDialog(BuildContext context) {
+  // نافذة إضافة مقرر جديد
+  void _showAddCourseDialog() {
     final nameController = TextEditingController();
     final hoursController = TextEditingController();
-    final labLangController = TextEditingController();
+    final labController = TextEditingController();
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (context) => AlertDialog(
         title: const Text('إضافة مقرر جديد'),
         content: SingleChildScrollView(
           child: Column(
@@ -389,28 +363,33 @@ class CourseDetailsTab extends StatelessWidget {
                 decoration: const InputDecoration(labelText: 'عدد الساعات'),
               ),
               TextField(
-                controller: labLangController,
+                controller: labController,
                 decoration: const InputDecoration(
-                    labelText: 'اللغات/الأدوات الخاصة بالمعمل (إن وجدت)'),
+                    labelText: 'أدوات/لغات المعمل (مثال: لا يوجد)'),
               ),
             ],
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () => Navigator.pop(context),
             child: const Text('إلغاء'),
           ),
           ElevatedButton(
             onPressed: () {
               if (nameController.text.isNotEmpty) {
-                onAddCourse({
-                  'name': nameController.text,
-                  'hours': hoursController.text,
-                  'lab': labLangController.text.isEmpty ? 'لا يوجد' : labLangController.text,
-                  'files': <String>[],
+                setState(() {
+                  courses.add(Course(
+                    id: DateTime.now().toString(),
+                    name: nameController.text,
+                    creditHours: int.tryParse(hoursController.text) ?? 3,
+                    labTools: labController.text.isEmpty
+                        ? 'لا يوجد'
+                        : labController.text,
+                  ));
                 });
-                Navigator.pop(ctx);
+                _saveCourses();
+                Navigator.pop(context);
               }
             },
             child: const Text('إضافة'),
@@ -423,232 +402,141 @@ class CourseDetailsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddCourseDialog(context),
-        label: const Text('إضافة مقرر'),
-        icon: const Icon(Icons.add),
+      appBar: AppBar(
+        title: Text('${widget.department} - سمستر ${widget.semester}'),
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
+        automaticallyImplyLeading: false,
       ),
-      body: courses.isEmpty
-          ? const Center(
-              child: Text(
-                'لا يوجد مقررات مضافة حالياً.\nاضغط على "إضافة مقرر" للبدء.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-              ),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          _buildCourseDetailsTab(),
+          const Center(child: Text('الشات الذكي (قريباً)')),
+          const Center(child: Text('مقياس المذاكرة (قريباً)')),
+        ],
+      ),
+      floatingActionButton: _currentIndex == 0
+          ? FloatingActionButton.extended(
+              onPressed: _showAddCourseDialog,
+              backgroundColor: Colors.indigo,
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: const Text('إضافة مقرر',
+                  style: TextStyle(color: Colors.white)),
             )
-          : ListView.builder(
-              padding: const EdgeInsets.all(15),
-              itemCount: courses.length,
-              itemBuilder: (context, index) {
-                final course = courses[index];
-                final List<dynamic> files = course['files'] ?? [];
-                return Card(
-                  elevation: 3,
-                  margin: const EdgeInsets.only(bottom: 15),
-                  child: Padding(
-                    padding: const EdgeInsets.all(15.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              course['name'],
-                              style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.indigo),
-                            ),
-                            Chip(
-                              label: Text('${course['hours']} ساعات'),
-                              backgroundColor: Colors.indigo.shade50,
-                            ),
-                          ],
-                        ),
-                        Text('أدوات/لغات المعمل: ${course['lab']}',
-                            style: const TextStyle(color: Colors.black87)),
-                        const Divider(),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('الملفات والمحاضرات:',
-                                style: TextStyle(fontWeight: FontWeight.bold)),
-                            ElevatedButton.icon(
-                              onPressed: () => _pickRealFile(context, index),
-                              icon: const Icon(Icons.upload_file, size: 18),
-                              label: const Text('إدراج ملف المحاضرة'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.teal,
-                                foregroundColor: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        files.isEmpty
-                            ? const Text('لم يتم إدراج ملفات بعد.',
-                                style: TextStyle(
-                                    color: Colors.grey, fontSize: 13))
-                            : Wrap(
-                                spacing: 8,
-                                children: files
-                                    .map((f) => Chip(
-                                          avatar: const Icon(Icons.picture_as_pdf,
-                                              size: 16, color: Colors.indigo),
-                                          label: Text(f.toString()),
-                                        ))
-                                    .toList(),
-                              ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
+          : null,
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) => setState(() => _currentIndex = index),
+        selectedItemColor: Colors.indigo,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bookmark),
+            label: 'تفاصيل المقرر',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chat_bubble),
+            label: 'الشات الذكي',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.help_outline),
+            label: 'مقياس المذاكرة',
+          ),
+        ],
+      ),
     );
   }
-}
-// -----------------------------------------------------------------------------
-// التبويب الثاني: الشات الذكي (SmartChatTab)
-// -----------------------------------------------------------------------------
-class SmartChatTab extends StatefulWidget {
-  final List<Map<String, dynamic>> courses;
 
-  const SmartChatTab({super.key, required this.courses});
+  // واجهة تفاصيل المقررات
+  Widget _buildCourseDetailsTab() {
+    if (courses.isEmpty) {
+      return const Center(
+        child: Text('لا توجد مقررات مضافة بعد. اضغط على "+ إضافة مقرر"'),
+      );
+    }
 
-  @override
-  State<SmartChatTab> createState() => _SmartChatTabState();
-}
-
-class _SmartChatTabState extends State<SmartChatTab> {
-  final List<Map<String, String>> messages = [];
-  final TextEditingController _controller = TextEditingController();
-
-  void _sendMessage() {
-    if (_controller.text.trim().isEmpty) return;
-    final userMsg = _controller.text;
-    setState(() {
-      messages.add({'sender': 'user', 'text': userMsg});
-      messages.add({
-        'sender': 'ai',
-        'text': 'أنا مساعدك الأكاديمي الذكي. قرأت استفسارك حول ($userMsg)، وستتم الإجابة بناءً على المقررات المرفقة عندك!'
-      });
-    });
-    _controller.clear();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Expanded(
-          child: messages.isEmpty
-              ? const Center(
-                  child: Text('ابدأ المحادثة وسؤال المساعد الذكي عن أي جزئية.'),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(10),
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    final isUser = messages[index]['sender'] == 'user';
-                    return Align(
-                      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(vertical: 5),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: isUser ? Colors.indigo.shade100 : Colors.grey.shade200,
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: courses.length,
+      itemBuilder: (context, index) {
+        final course = courses[index];
+        return Card(
+          elevation: 2,
+          margin: const EdgeInsets.only(bottom: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      course.name,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.indigo,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text('${course.creditHours} ساعات'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text('أدوات/لغات المعمل: ${course.labTools}'),
+                const Divider(height: 25),
+                Row(
+                  children: [
+                    const Text('الملفات والمحاضرات: '),
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.teal,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: () => _pickFileForCourse(course),
+                      icon: const Icon(Icons.upload_file, size: 18),
+                      label: const Text('إدراج ملف المحاضرة'),
+                    ),
+                  ],
+                ),
+                if (course.fileName != null) ...[
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _openCourseFile(course.filePath),
+                      icon: const Icon(Icons.picture_as_pdf,
+                          color: Colors.indigo),
+                      label: Text(
+                        course.fileName!,
+                        style: const TextStyle(color: Colors.black87),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.grey),
+                        shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Text(messages[index]['text'] ?? ''),
                       ),
-                    );
-                  },
-                ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _controller,
-                  decoration: const InputDecoration(
-                    hintText: 'اكتب سؤالك هنا...',
-                    border: OutlineInputBorder(),
+                    ),
                   ),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.send, color: Colors.indigo),
-                onPressed: _sendMessage,
-              ),
-            ],
+                ],
+              ],
+            ),
           ),
-        ),
-      ],
-    );
-  }
-}
-
-// -----------------------------------------------------------------------------
-// التبويب الثالث: مولد الاختبارات (QuizGeneratorTab)
-// -----------------------------------------------------------------------------
-class QuizGeneratorTab extends StatefulWidget {
-  final List<Map<String, dynamic>> courses;
-
-  const QuizGeneratorTab({super.key, required this.courses});
-
-  @override
-  State<QuizGeneratorTab> createState() => _QuizGeneratorTabState();
-}
-
-class _QuizGeneratorTabState extends State<QuizGeneratorTab> {
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.quiz, size: 80, color: Colors.indigo),
-            const SizedBox(height: 15),
-            const Text(
-              'مقياس المذاكرة والاختبارات الذكية',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              widget.courses.isEmpty
-                  ? 'يرجى إضافة مقررات أولاً للبدء في توليد الأسئلة.'
-                  : 'عدد المقررات المتاحة لتوليد الأسئلة: ${widget.courses.length}',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.indigo,
-                foregroundColor: Colors.white,
-              ),
-              onPressed: widget.courses.isEmpty
-                  ? null
-                  : () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('جاري إنشاء اختبار تجريبي للمقررات...'),
-                        ),
-                      );
-                    },
-              child: const Text('توليد اختبار تجريبي'),
-            ),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 }
