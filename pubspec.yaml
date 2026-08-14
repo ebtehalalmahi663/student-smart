@@ -15,7 +15,8 @@ dependencies:
   shared_preferences: ^2.2.2
   file_picker: ^8.0.0
   open_filex: ^4.5.0
-
+syncfusion_flutter_pdf: ^24.2.7 # لقراءة نصوص الـ PDF الحقيقية
+  http: ^1.2.0 # للتواصل مع Gemini API
 dev_dependencies:
   flutter_test:
     sdk: flutter
