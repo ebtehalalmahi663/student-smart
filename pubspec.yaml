@@ -1,6 +1,7 @@
-name: smart_academic_assistant
-description: "تطبيق المساعد الذكي لمراجعة المقرر الدراسي لطلاب الجامعات"
+name: student_smart
+description: "A new Flutter project."
 publish_to: 'none'
+
 version: 1.0.0+1
 
 environment:
@@ -11,12 +12,12 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  cupertino_icons: ^1.0.6
   shared_preferences: ^2.2.2
   file_picker: ^8.0.0
-  open_filex: ^4.5.0
-syncfusion_flutter_pdf: ^24.2.7 # لقراءة نصوص الـ PDF الحقيقية
-  http: ^1.2.0 # للتواصل مع Gemini API
+  open_filex: ^4.4.0
+  syncfusion_flutter_pdf: ^24.2.7
+  http: ^1.2.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
