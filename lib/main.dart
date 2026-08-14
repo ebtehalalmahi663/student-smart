@@ -461,9 +461,17 @@ class StudyProgressScreen extends StatelessWidget {
       ),
     );
   }
-}
-class CourseDetailsScreen extends StatelessWidget {
+  class CourseDetailsScreen extends StatefulWidget {
   const CourseDetailsScreen({super.key});
+
+  @override
+  State<CourseDetailsScreen> createState() => _CourseDetailsScreenState();
+}
+
+class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
+  final _nameController = TextEditingController();
+  final _descController = TextEditingController();
+  String _fileStatus = "لم يتم اختيار ملف بعد";
 
   @override
   Widget build(BuildContext context) {
@@ -474,12 +482,83 @@ class CourseDetailsScreen extends StatelessWidget {
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
       ),
-      body: const Center(
-        child: Text(
-          'تفاصيل المقرر والمحاضرات المرفوعة',
-          style: TextStyle(fontSize: 16),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // حقول إدخال البيانات
+            TextFormField(
+              controller: _nameController,
+              textAlign: TextAlign.right,
+              decoration: const InputDecoration(
+                labelText: 'اسم المقرر',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.book),
+              ),
+            ),
+            const SizedBox(height: 15),
+            TextFormField(
+              controller: _descController,
+              textAlign: TextAlign.right,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'وصف المقرر',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.description),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // أزرار التحكم
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      // هنا تضعين كود اختيار الملف
+                      setState(() {
+                        _fileStatus = "تم قراءة محتوى الملف بنجاح";
+                      });
+                    },
+                    icon: const Icon(Icons.upload_file),
+                    label: const Text('إدراج ملف المحاضرة'),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo.shade50),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () {
+                // كود حفظ البيانات
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo),
+              child: const Text('حفظ وإضافة المقرر', style: TextStyle(color: Colors.white)),
+            ),
+            const SizedBox(height: 20),
+            
+            // منطقة عرض محتوى الملف
+            const Divider(),
+            const Text('محتوى الملف:', textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(15),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                _fileStatus,
+                textAlign: TextAlign.right,
+                style: const TextStyle(color: Colors.grey),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+}
+  
 }
