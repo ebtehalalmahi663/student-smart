@@ -461,7 +461,8 @@ class StudyProgressScreen extends StatelessWidget {
       ),
     );
   }
-  class CourseDetailsScreen extends StatefulWidget {
+  // هذا الكود يوضع في نهاية الملف بالخارج تماماً
+class CourseDetailsScreen extends StatefulWidget {
   const CourseDetailsScreen({super.key});
 
   @override
@@ -487,7 +488,6 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // حقول إدخال البيانات
             TextFormField(
               controller: _nameController,
               textAlign: TextAlign.right,
@@ -509,14 +509,11 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // أزرار التحكم
             Row(
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () {
-                      // هنا تضعين كود اختيار الملف
                       setState(() {
                         _fileStatus = "تم قراءة محتوى الملف بنجاح";
                       });
@@ -530,15 +527,11 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
             ),
             const SizedBox(height: 10),
             ElevatedButton(
-              onPressed: () {
-                // كود حفظ البيانات
-              },
+              onPressed: () {},
               style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo),
               child: const Text('حفظ وإضافة المقرر', style: TextStyle(color: Colors.white)),
             ),
             const SizedBox(height: 20),
-            
-            // منطقة عرض محتوى الملف
             const Divider(),
             const Text('محتوى الملف:', textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
@@ -561,4 +554,3 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
   }
 }
   
-}
