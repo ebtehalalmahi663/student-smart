@@ -462,3 +462,24 @@ class StudyProgressScreen extends StatelessWidget {
     );
   }
 }
+class CourseDetailsScreen extends StatelessWidget {
+  const CourseDetailsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('تفاصيل المقرر'),
+        centerTitle: true,
+        backgroundColor: Colors.indigo,
+        foregroundColor: Colors.white,
+      ),
+      body: const Center(
+        child: Text(
+          'تفاصيل المقرر والمحاضرات المرفوعة',
+          style: TextStyle(fontSize: 16),
+        ),
+      ),
+    );
+  }
+}
