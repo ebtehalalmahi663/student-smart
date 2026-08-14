@@ -467,14 +467,54 @@ class CourseDetailsScreen extends StatefulWidget {
 
 class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
   final _nameController = TextEditingController();
-  final _descController = TextEditingController();
-  String _fileStatus = "لم يتم اختيار ملف بعد";
+  final _hoursController = TextEditingController();
+  final _labLangController = TextEditingController();
+
+  bool _isCourseAdded = false;
+  String _addedCourseName = "";
+  String _addedCourseHours = "";
+  String _addedCourseLang = "";
+
+  // قائمة لحفظ ملفات المحاضرات الحقيقية المضافة
+  final List<PlatformFile> _lectureFiles = [];
+
+  // دالة اختيار ملف حقيقي من ذاكرة الهاتف
+  Future<void> _pickLectureFile() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        allowMultiple: true,
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt'],
+      );
+
+      if (result != null) {
+        setState(() {
+          _lectureFiles.addAll(result.files);
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('حدث خطأ أثناء اختيار الملف: $e')),
+      );
+    }
+  }
+
+  // دالة فتح الملف الحقيقي لقراءته
+  Future<void> _openFile(PlatformFile file) async {
+    if (file.path != null) {
+      await OpenFilex.open(file.path!);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر فتح الملف (المسار غير صالح)')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('تفاصيل المقرر'),
+        title: const Text('إدارة و تفاصيل المقرر'),
         centerTitle: true,
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
@@ -484,6 +524,13 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // --- 1. قسم بيانات المقرر ---
+            const Text(
+              'بيانات المقرر الأكاديمي',
+              textAlign: TextAlign.right,
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo),
+            ),
+            const SizedBox(height: 12),
             TextFormField(
               controller: _nameController,
               textAlign: TextAlign.right,
@@ -493,60 +540,172 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                 prefixIcon: Icon(Icons.book),
               ),
             ),
-            const SizedBox(height: 15),
-            TextFormField(
-              controller: _descController,
-              textAlign: TextAlign.right,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'وصف المقرر',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.description),
-              ),
-            ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      setState(() {
-                        _fileStatus = "تم قراءة محتوى الملف بنجاح";
-                      });
-                    },
-                    icon: const Icon(Icons.upload_file),
-                    label: const Text('إدراج ملف المحاضرة'),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo.shade50),
+                  child: TextFormField(
+                    controller: _labLangController,
+                    textAlign: TextAlign.right,
+                    decoration: const InputDecoration(
+                      labelText: 'لغة المعمل (إن وجدت)',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.code),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextFormField(
+                    controller: _hoursController,
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.right,
+                    decoration: const InputDecoration(
+                      labelText: 'عدد الساعات',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.access_time),
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo),
-              child: const Text('حفظ وإضافة المقرر', style: TextStyle(color: Colors.white)),
-            ),
-            const SizedBox(height: 20),
-            const Divider(),
-            const Text('محتوى الملف:', textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(15),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(10),
+            const SizedBox(height: 15),
+            ElevatedButton.icon(
+              onPressed: () {
+                if (_nameController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('الرجاء كتابة اسم المقرر أولاً')),
+                  );
+                  return;
+                }
+                setState(() {
+                  _isCourseAdded = true;
+                  _addedCourseName = _nameController.text.trim();
+                  _addedCourseHours = _hoursController.text.trim();
+                  _addedCourseLang = _labLangController.text.trim();
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('تم حفظ بيانات المقرر بنجاح!')),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.indigo,
+                padding: const EdgeInsets.symmetric(vertical: 12),
               ),
-              child: Text(
-                _fileStatus,
+              icon: const Icon(Icons.save, color: Colors.white),
+              label: const Text('حفظ وإضافة المقرر', style: TextStyle(color: Colors.white, fontSize: 16)),
+            ),
+
+            const SizedBox(height: 25),
+            const Divider(thickness: 1.5),
+
+            // --- 2. قسم المحاضرات والملفات الحقيقية (يظهر بعد حفظ المقرر) ---
+            if (_isCourseAdded) ...[
+              Card(
+                color: Colors.indigo.shade50,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text('المقرر الحالي: $_addedCourseName', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo)),
+                      const SizedBox(height: 4),
+                      Text('عدد الساعات: ${_addedCourseHours.isEmpty ? "غير محدد" : _addedCourseHours}  |  لغة المعمل: ${_addedCourseLang.isEmpty ? "لا يوجد" : _addedCourseLang}', style: const TextStyle(fontSize: 12, color: Colors.black87)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 15),
+
+              // زر اختيار ملفات المحاضرات من متصفح الجهاز
+              ElevatedButton.icon(
+                onPressed: _pickLectureFile,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.indigo.shade100,
+                  foregroundColor: Colors.indigo.shade900,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                icon: const Icon(Icons.file_upload_outlined),
+                label: const Text('إضافة ملف محاضرات من الجهاز'),
+              ),
+              const SizedBox(height: 15),
+
+              // قائمة الملفات المرفقة
+              const Text(
+                'ملفات المحاضرات المضافة:',
                 textAlign: TextAlign.right,
-                style: const TextStyle(color: Colors.grey),
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
-            ),
+              const SizedBox(height: 10),
+
+              _lectureFiles.isEmpty
+                  ? Container(
+                      padding: const EdgeInsets.all(20),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Text(
+                        'لم يتم إضافة أي ملفات بعد. اضغطي على زر الإضافة أعلاه.',
+                        style: TextStyle(color: Colors.grey, fontSize: 13),
+                        textAlign: TextAlign.center,
+                      ),
+                    )
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _lectureFiles.length,
+                      itemBuilder: (context, index) {
+                        final file = _lectureFiles[index];
+                        final sizeInMb = (file.size / (1024 * 1024)).toStringAsFixed(2);
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: ListTile(
+                            leading: IconButton(
+                              icon: const Icon(Icons.delete_outline, color: Colors.red),
+                              onPressed: () {
+                                setState(() {
+                                  _lectureFiles.removeAt(index);
+                                });
+                              },
+                            ),
+                            title: Text(
+                              file.name,
+                              textAlign: TextAlign.right,
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                            ),
+                            subtitle: Text(
+                              '$sizeInMb MB',
+                              textAlign: TextAlign.right,
+                              style: const TextStyle(fontSize: 11, color: Colors.grey),
+                            ),
+                            trailing: const Icon(Icons.picture_as_pdf, color: Colors.indigo),
+                            onTap: () => _openFile(file), // فتح الملف وقراءته
+                          ),
+                        );
+                      },
+                    ),
+            ] else ...[
+              Container(
+                padding: const EdgeInsets.all(20),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Text(
+                  'يرجى إدخال بيانات المقرر وحفظه أولاً لتتمكني من إضافة ملفات المحاضرات.',
+                  style: TextStyle(color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ]
           ],
         ),
       ),
     );
   }
 }
-
