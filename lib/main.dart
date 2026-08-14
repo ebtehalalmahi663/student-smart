@@ -3,13 +3,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package0:file_picker/file_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart'; // لقراءة ملفات الـ PDF
 import 'package:http/http.dart' as http; // للاتصال بـ Gemini API
 
 // ⚠️ حطي مفتاح Gemini API بتاعك هنا
-const String geminiApiKey = 'YOUR_GEMINI_API_KEY';
+const String geminiApiKey = 'AQ.Ab8RN6L2NMyfy7EZkalu8iGnJ2j8y0EqHE3_QtZbCVnIoMfiTQ';
 
 // -----------------------------------------------------------------------------
 // 1. نماذج البيانات (CourseFile & Course & ChatMessage)
