@@ -112,8 +112,7 @@ Future<String> getGeminiResponse(String prompt, String contextText) async {
     return 'يرجى إدخال مفتاح Gemini API الخاص بك في الكود للبدء في توليد الإجابات الذكية.';
   }
 
-  final url = Uri.parse(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$geminiApiKey');
+  final Uri url = Uri.parse('https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=$apiKey');
 
   final systemInstruction =
       'أنت مساعد أكاديمي ذكي. أجب على سؤال الطالب بناءً على المحتوى المستخرج من ملفات المحاضرات التالية فقط بأسلوب واضح ودقيق باللغة العربية:\n\n$contextText';
