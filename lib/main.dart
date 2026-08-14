@@ -9,7 +9,7 @@ import 'package:syncfusion_flutter_pdf/pdf.dart'; // لقراءة ملفات ا�
 import 'package:http/http.dart' as http; // للاتصال بـ Gemini API
 
 // ⚠️ حطي مفتاح Gemini API بتاعك هنا
-const String geminiApiKey = 'AQ.Ab8RN6L2NMyfy7EZkalu8iGnJ2j8y0EqHE3_QtZbCVnIoMfiTQ';
+const String geminiApiKey = 'AQ.Ab8RN6K66Ax7h5Fr8zZK8TkXLM8kC3sMk4QrRNEfcTB-IsH1rQ';
 
 // -----------------------------------------------------------------------------
 // 1. نماذج البيانات (CourseFile & Course & ChatMessage)
