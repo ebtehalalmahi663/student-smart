@@ -3,35 +3,52 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:open_filex/open_filex.dart'; // حزمة فتح الملفات
+import 'package:open_filex/open_filex.dart'; // حزمة فتح الملفات (مصححة)
 
 // -----------------------------------------------------------------------------
-// 1. نموذج البيانات للمقرر الدراسي (Course Model)
+// 1. نموذج البيانات للملف المقترن بالمقرر (CourseFile)
+// -----------------------------------------------------------------------------
+class CourseFile {
+  String name;
+  String path;
+
+  CourseFile({required this.name, required this.path});
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'path': path,
+      };
+
+  factory CourseFile.fromJson(Map<String, dynamic> json) => CourseFile(
+        name: json['name'],
+        path: json['path'],
+      );
+}
+
+// -----------------------------------------------------------------------------
+// نموذج البيانات للمقرر الدراسي (Course Model)
 // -----------------------------------------------------------------------------
 class Course {
   String id;
   String name;
   int creditHours;
   String labTools;
-  String? fileName;
-  String? filePath;
+  List<CourseFile> files;
 
   Course({
     required this.id,
     required this.name,
     required this.creditHours,
     required this.labTools,
-    this.fileName,
-    this.filePath,
-  });
+    List<CourseFile>? files,
+  }) : files = files ?? [];
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
         'creditHours': creditHours,
         'labTools': labTools,
-        'fileName': fileName,
-        'filePath': filePath,
+        'files': files.map((f) => f.toJson()).toList(),
       };
 
   factory Course.fromJson(Map<String, dynamic> json) => Course(
@@ -39,8 +56,11 @@ class Course {
         name: json['name'],
         creditHours: json['creditHours'],
         labTools: json['labTools'],
-        fileName: json['fileName'],
-        filePath: json['filePath'],
+        files: json['files'] != null
+            ? (json['files'] as List)
+                .map((item) => CourseFile.fromJson(item))
+                .toList()
+            : [],
       );
 }
 
@@ -305,25 +325,37 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
     await prefs.setString('courses_data', encodedData);
   }
 
-  // إدراج ملف المحاضرة
+  // إدراج ملف أو ملفات متعددة للمقرر
   Future<void> _pickFileForCourse(Course course) async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'doc', 'docx', 'ppt', 'pptx'],
+      allowMultiple: true, // للسماح باختيار أكثر من ملف معاً
     );
 
-    if (result != null && result.files.single.path != null) {
+    if (result != null) {
       setState(() {
-        course.fileName = result.files.single.name;
-        course.filePath = result.files.single.path;
+        for (var file in result.files) {
+          if (file.path != null) {
+            course.files.add(CourseFile(name: file.name, path: file.path!));
+          }
+        }
       });
       await _saveCourses();
     }
   }
 
-  // دالة فتح الملف وقراءة محتواه عند الضغط
-  Future<void> _openCourseFile(String? filePath) async {
-    if (filePath != null && filePath.isNotEmpty) {
+  // حذف ملف معين من المقرر
+  Future<void> _deleteCourseFile(Course course, int index) async {
+    setState(() {
+      course.files.removeAt(index);
+    });
+    await _saveCourses();
+  }
+
+  // دالة فتح الملف عند الضغط عليه
+  Future<void> _openCourseFile(String filePath) async {
+    if (filePath.isNotEmpty) {
       final result = await OpenFilex.open(filePath);
       if (result.type != ResultType.done && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -511,25 +543,29 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
                     ),
                   ],
                 ),
-                if (course.fileName != null) ...[
+
+                // عرض قائمة الملفات إذا كانت موجودة
+                if (course.files.isNotEmpty) ...[
                   const SizedBox(height: 12),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: OutlinedButton.icon(
-                      onPressed: () => _openCourseFile(course.filePath),
-                      icon: const Icon(Icons.picture_as_pdf,
-                          color: Colors.indigo),
-                      label: Text(
-                        course.fileName!,
-                        style: const TextStyle(color: Colors.black87),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.grey),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: List.generate(course.files.length, (fileIndex) {
+                      final file = course.files[fileIndex];
+                      return InputChip(
+                        avatar: const Icon(Icons.picture_as_pdf,
+                            color: Colors.indigo, size: 18),
+                        label: Text(
+                          file.name,
+                          style: const TextStyle(color: Colors.black87),
                         ),
-                      ),
-                    ),
+                        onPressed: () => _openCourseFile(file.path),
+                        onDeleted: () => _deleteCourseFile(course, fileIndex),
+                        deleteIcon:
+                            const Icon(Icons.cancel, size: 18, color: Colors.red),
+                        backgroundColor: Colors.grey.shade100,
+                      );
+                    }),
                   ),
                 ],
               ],
