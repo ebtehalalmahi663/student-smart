@@ -461,6 +461,8 @@ class StudyProgressScreen extends StatelessWidget {
       ),
     );
   }
+
+  
   // هذا الكود يوضع في نهاية الملف بالخارج تماماً
 class CourseDetailsScreen extends StatefulWidget {
   const CourseDetailsScreen({super.key});
