@@ -244,30 +244,220 @@ class StudyProgressScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('مقياس المذاكرة'),
+        title: const Text('تقانة المعلومات - سمستر 6'),
+        centerTitle: true,
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
       ),
-      body: const Center(
-        child: Text('شاشة قياس المذاكرة والاختبارات الذكية'),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'خيارات مقياس المذاكرة',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.indigo,
+              ),
+              textAlign: TextAlign.right,
+            ),
+            const SizedBox(height: 12),
+
+            // كروت الاختبارات السريعة
+            Row(
+              children: [
+                Expanded(
+                  child: _buildOptionCard(
+                    title: 'اختبار تجريبي: الذكاء الاصطناعي',
+                    subtitle: '4/10 المنجز',
+                    icon: Icons.quiz_outlined,
+                    badgeText: 'نشط',
+                    progress: 0.4,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildOptionCard(
+                    title: 'اختبار سريع: الفصل الأول',
+                    subtitle: '6/10 المنجز',
+                    icon: Icons.assignment_outlined,
+                    badgeText: 'مكتمل',
+                    progress: 0.6,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // خطة الدراسة الأسبوعية
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [
+                        Chip(
+                          label: Text('نشط', style: TextStyle(color: Colors.white, fontSize: 11)),
+                          backgroundColor: Colors.green,
+                        ),
+                        Text(
+                          'خطة دراسة الأسبوع الحالي',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'متابعة ساعات المذاكرة والمحاضرات المتبقية لهذا الأسبوع.',
+                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                      textAlign: TextAlign.right,
+                    ),
+                    const SizedBox(height: 10),
+                    LinearProgressIndicator(
+                      value: 0.7,
+                      backgroundColor: Colors.indigo.shade50,
+                      color: Colors.indigo,
+                      minHeight: 8,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // بنك الأسئلة والمراجعة
+            Row(
+              children: [
+                Expanded(
+                  child: _buildActionTile(
+                    title: 'بنك الأسئلة الشامل',
+                    icon: Icons.menu_book_outlined,
+                    color: Colors.indigo,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildActionTile(
+                    title: 'مراجعة المحاضرات',
+                    icon: Icons.rate_review_outlined,
+                    color: Colors.blue.shade700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // قائمة المتصدرين / ملخص الإنجاز
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: const ListTile(
+                leading: Icon(Icons.leaderboard, color: Colors.indigo, size: 30),
+                title: Text(
+                  'ملخص التقدم الكلي',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(
+                  'أنجزت 65% من الإختبارات والمراجعات لهذا الفصل',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(fontSize: 12),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
-}
 
-class CourseDetailsScreen extends StatelessWidget {
-  const CourseDetailsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('تفاصيل المقرر'),
-        backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
+  Widget _buildOptionCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required String badgeText,
+    required double progress,
+  }) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.indigo.shade50,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    badgeText,
+                    style: const TextStyle(color: Colors.indigo, fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Icon(icon, color: Colors.indigo),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              textAlign: TextAlign.right,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: const TextStyle(color: Colors.grey, fontSize: 11),
+            ),
+            const SizedBox(height: 8),
+            LinearProgressIndicator(
+              value: progress,
+              backgroundColor: Colors.grey.shade200,
+              color: Colors.indigo,
+            ),
+          ],
+        ),
       ),
-      body: const Center(
-        child: Text('تفاصيل المقرر والمحاضرات المرفوعة'),
+    );
+  }
+
+  Widget _buildActionTile({
+    required String title,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          ),
+          const SizedBox(width: 8),
+          Icon(icon, color: color),
+        ],
       ),
     );
   }
