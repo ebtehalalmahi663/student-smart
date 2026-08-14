@@ -102,7 +102,6 @@ class _SmartChatScreenState extends State<SmartChatScreen> {
     _controller.clear();
 
     try {
-      // ✅ تم دمج المفتاح ورابط Gemini 1.5 Flash مباشرة بدون متغيرات لضمان عدم حدوث خطأ 401 أو Undefined apiKey
       final Uri url = Uri.parse(
         'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AQ.Ab8RN6L2NMyfy7EZKalu8iGnJ2j8y0EqHE3_QtZbCVnloMfiTQ',
       );
@@ -265,7 +264,6 @@ class StudyProgressScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // كروت الاختبارات السريعة
             Row(
               children: [
                 Expanded(
@@ -291,7 +289,6 @@ class StudyProgressScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // خطة الدراسة الأسبوعية
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -332,7 +329,6 @@ class StudyProgressScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // بنك الأسئلة والمراجعة
             Row(
               children: [
                 Expanded(
@@ -354,7 +350,6 @@ class StudyProgressScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // قائمة المتصدرين / ملخص الإنجاز
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -461,9 +456,8 @@ class StudyProgressScreen extends StatelessWidget {
       ),
     );
   }
+}
 
-  
-  // هذا الكود يوضع في نهاية الملف بالخارج تماماً
 class CourseDetailsScreen extends StatefulWidget {
   const CourseDetailsScreen({super.key});
 
@@ -555,4 +549,4 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
     );
   }
 }
-  
+
