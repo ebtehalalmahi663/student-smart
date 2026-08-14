@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package0:open_filex/open_filex.dart'; // حزمة فتح الملفات
+import 'package:open_filex/open_filex.dart'; // حزمة فتح الملفات
 
 // -----------------------------------------------------------------------------
 // 1. نموذج البيانات للمقرر الدراسي (Course Model)
