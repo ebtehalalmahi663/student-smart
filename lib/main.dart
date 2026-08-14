@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'dartdart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -38,7 +38,7 @@ class SmartAcademicAssistantApp extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// شاشة الإعداد الأولية (تحديد الكلية، القسم، والسمستر)
+// شاشة الإعداد الأولية (قوائم منسدلة معتمدة على بيانات الكلية والقسم)
 // -----------------------------------------------------------------------------
 class SetupScreen extends StatefulWidget {
   const SetupScreen({super.key});
@@ -48,12 +48,51 @@ class SetupScreen extends StatefulWidget {
 }
 
 class _SetupScreenState extends State<SetupScreen> {
-  final _facultyController = TextEditingController(text: 'الحاسوب وتقانة المعلومات');
-  final _departmentController = TextEditingController(text: 'علوم الحاسوب');
-  int _selectedSemester = 1;
+  // بيانات الكليات والأقسام وعدد السمسترات الخاصة بكل كلية
+  final Map<String, Map<String, dynamic>> academicData = {
+    'علوم الحاسوب وتقانة المعلومات': {
+      'semesters': 10,
+      'departments': ['تقانة المعلومات', 'نظم المعلومات', 'علوم الحاسوب'],
+    },
+    'الطب': {
+      'semesters': 10,
+      'departments': ['المختبرات', 'الطب البشري', 'الطب البيطري', 'التمريض'],
+    },
+    'الاقتصاد': {
+      'semesters': 8,
+      'departments': ['محاسبة', 'اقتصاد', 'إدارة', 'نظم معلومات'],
+    },
+    'التربية': {
+      'semesters': 8,
+      'departments': [
+        'لغة عربية',
+        'كيمياء وأحياء',
+        'فيزياء ورياضيات',
+        'لغة إنجليزية',
+        'تربية خاصة'
+      ],
+    },
+  };
+
+  String? selectedFaculty;
+  String? selectedDepartment;
+  int selectedSemester = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    // تعيين الكلية الأولى افتراضياً وتحديد أقسامها
+    selectedFaculty = academicData.keys.first;
+    selectedDepartment = academicData[selectedFaculty]!['departments'].first;
+  }
 
   @override
   Widget build(BuildContext context) {
+    // جلب الأقسام والسمسترات المتاحة للكلية المختارة حالياً
+    final currentFacultyInfo = academicData[selectedFaculty]!;
+    final List<String> availableDepartments = List<String>.from(currentFacultyInfo['departments']);
+    final int maxSemesters = currentFacultyInfo['semesters'];
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('إعداد المساعد الأكاديمي'),
@@ -67,33 +106,67 @@ class _SetupScreenState extends State<SetupScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'مرحباً بك! يرجى إدخال البيانات الأكاديمية:',
+                'مرحباً بك! يرجى اختيار البيانات الأكاديمية:',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: _facultyController,
+              const SizedBox(height: 25),
+
+              // 1. قائمة منسدلة للكلية
+              DropdownButtonFormField<String>(
+                value: selectedFaculty,
                 decoration: const InputDecoration(
                   labelText: 'الكلية',
                   border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.school, color: Colors.indigo),
                 ),
+                items: academicData.keys
+                    .map((fac) => DropdownMenuItem(
+                          value: fac,
+                          child: Text(fac),
+                        ))
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      selectedFaculty = value;
+                      // تحديث القسم للقسم الأول في الكلية الجديدة وتصفير السمستر لـ 1
+                      selectedDepartment = academicData[value]!['departments'].first;
+                      selectedSemester = 1;
+                    });
+                  }
+                },
               ),
-              const SizedBox(height: 15),
-              TextField(
-                controller: _departmentController,
+              const SizedBox(height: 20),
+
+              // 2. قائمة منسدلة للقسم (تتغير ديناميكياً حسب الكلية)
+              DropdownButtonFormField<String>(
+                value: selectedDepartment,
                 decoration: const InputDecoration(
                   labelText: 'القسم / التخصص',
                   border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.domain, color: Colors.indigo),
                 ),
+                items: availableDepartments
+                    .map((dept) => DropdownMenuItem(
+                          value: dept,
+                          child: Text(dept),
+                        ))
+                    .toList(),
+                onChanged: (value) {
+                  setState(() => selectedDepartment = value);
+                },
               ),
-              const SizedBox(height: 15),
+              const SizedBox(height: 20),
+
+              // 3. قائمة منسدلة للسمستر (يتعدل عدد السمسترات حسب الكلية)
               DropdownButtonFormField<int>(
-                value: _selectedSemester,
+                value: selectedSemester > maxSemesters ? 1 : selectedSemester,
                 decoration: const InputDecoration(
                   labelText: 'السمستر الحالي',
                   border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.format_list_numbered, color: Colors.indigo),
                 ),
-                items: List.generate(10, (index) => index + 1)
+                items: List.generate(maxSemesters, (index) => index + 1)
                     .map((sem) => DropdownMenuItem(
                           value: sem,
                           child: Text('السمستر $sem'),
@@ -101,35 +174,42 @@ class _SetupScreenState extends State<SetupScreen> {
                     .toList(),
                 onChanged: (value) {
                   if (value != null) {
-                    setState(() => _selectedSemester = value);
+                    setState(() => selectedSemester = value);
                   }
                 },
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 35),
+
+              // زر الدخول للتطبيق
               SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: 52,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.indigo,
                     foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                   onPressed: () {
-                    if (_facultyController.text.isNotEmpty &&
-                        _departmentController.text.isNotEmpty) {
+                    if (selectedFaculty != null && selectedDepartment != null) {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
                           builder: (context) => MainDashboardScreen(
-                            faculty: _facultyController.text,
-                            department: _departmentController.text,
-                            semester: _selectedSemester,
+                            faculty: selectedFaculty!,
+                            department: selectedDepartment!,
+                            semester: selectedSemester,
                           ),
                         ),
                       );
                     }
                   },
-                  child: const Text('الدخول للتطبيق', style: TextStyle(fontSize: 16)),
+                  child: const Text(
+                    'الدخول للتطبيق',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ],
