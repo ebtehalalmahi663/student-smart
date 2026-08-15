@@ -277,7 +277,16 @@ class MainNavigationScreen extends StatefulWidget {
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  int _selectedIndex = 1;
+  int _selectedIndex = 0; // تغيير البداية لشاشة مقياس المذاكرة مباشرة
+
+  // قائمة الملفات المضافة مشتركة بين الشاشات
+  List<PlatformFile> uploadedFiles = [];
+
+  void _updateFiles(List<PlatformFile> files) {
+    setState(() {
+      uploadedFiles = files;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -287,9 +296,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         college: widget.college,
         department: widget.department,
         semester: widget.semester,
+        uploadedFiles: uploadedFiles,
       ),
       SmartChatScreen(userName: widget.userName),
-      const CourseDetailsScreen(),
+      CourseDetailsScreen(
+        onFilesUpdated: _updateFiles,
+        currentFiles: uploadedFiles,
+      ),
     ];
 
     return Scaffold(
@@ -330,6 +343,7 @@ class StudyProgressScreen extends StatefulWidget {
   final String college;
   final String department;
   final String semester;
+  final List<PlatformFile> uploadedFiles;
 
   const StudyProgressScreen({
     super.key,
@@ -337,6 +351,7 @@ class StudyProgressScreen extends StatefulWidget {
     required this.college,
     required this.department,
     required this.semester,
+    required this.uploadedFiles,
   });
 
   @override
@@ -344,16 +359,11 @@ class StudyProgressScreen extends StatefulWidget {
 }
 
 class _StudyProgressScreenState extends State<StudyProgressScreen> {
-  String? _selectedLecture = 'جميع المحاضرات المضافة';
   int _questionCount = 10;
   String _questionType = 'اختيار من متعدد (MCQ)';
 
-  final List<String> _availableLectures = [
-    'جميع المحاضرات المضافة',
-    'المحاضرة 1: مقدمة في المقرر',
-    'المحاضرة 2: المفاهيم الأساسية',
-    'المحاضرة 3: التطبيقات العملية',
-  ];
+  // خريطة لحفظ المحاضرات المختارة (صح أم لا)
+  final Map<String, bool> _selectedLecturesMap = {};
 
   final List<int> _questionCountOptions = [5, 10, 15, 20, 30];
   final List<String> _questionTypes = [
@@ -362,6 +372,27 @@ class _StudyProgressScreenState extends State<StudyProgressScreen> {
     'أسئلة مقالية قصيرة',
     'مزيج من جميع الأنواع',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _syncLectures();
+  }
+
+  @override
+  void didUpdateWidget(covariant StudyProgressScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _syncLectures();
+  }
+
+  // مزامنة الملفات المضافة مع خريطة التحديد (علامات الصح)
+  void _syncLectures() {
+    for (var file in widget.uploadedFiles) {
+      if (!_selectedLecturesMap.containsKey(file.name)) {
+        _selectedLecturesMap[file.name] = true; // تحديد الكل افتراضياً
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -377,7 +408,7 @@ class _StudyProgressScreenState extends State<StudyProgressScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // بطاقة التنبيه المخصصة بأسماء الزول
+            // بطاقة الترحيب
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -426,30 +457,60 @@ class _StudyProgressScreenState extends State<StudyProgressScreen> {
                       ],
                     ),
                     const SizedBox(height: 15),
-                    const Text('اختر المحاضرة / الملف:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    const SizedBox(height: 6),
-                    DropdownButtonFormField<String>(
-                      value: _selectedLecture,
-                      isExpanded: true,
-                      decoration: InputDecoration(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                        fillColor: Colors.grey.shade50,
-                        filled: true,
-                      ),
-                      items: _availableLectures.map((lecture) {
-                        return DropdownMenuItem(
-                          value: lecture,
-                          child: Text(lecture, textAlign: TextAlign.right, style: const TextStyle(fontSize: 13)),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        setState(() {
-                          _selectedLecture = val;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 12),
+                    
+                    const Text('اختر المحاضرات للداخلة في الامتحان:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    const SizedBox(height: 8),
+
+                    // قائمة المحاضرات الديناميكية المضافة مع علامات صح
+                    widget.uploadedFiles.isEmpty
+                        ? Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.shade50,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.orange.shade200),
+                            ),
+                            child: const Text(
+                              '⚠️ لم تقم بإضافة أي محاضرات بعد!\nيرجى الانتقال لشاشة "تفاصيل المقرر" وإضافة ملفات المحاضرات أولاً.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold),
+                            ),
+                          )
+                        : Container(
+                            maxHeight: 180,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade50,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: widget.uploadedFiles.length,
+                              itemBuilder: (context, index) {
+                                final fileName = widget.uploadedFiles[index].name;
+                                final isSelected = _selectedLecturesMap[fileName] ?? true;
+
+                                return CheckboxListTile(
+                                  activeColor: Colors.indigo,
+                                  dense: true,
+                                  title: Text(
+                                    fileName,
+                                    textAlign: TextAlign.right,
+                                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                                  ),
+                                  value: isSelected,
+                                  onChanged: (bool? value) {
+                                    setState(() {
+                                      _selectedLecturesMap[fileName] = value ?? false;
+                                    });
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+
+                    const SizedBox(height: 15),
                     Row(
                       children: [
                         Expanded(
@@ -517,9 +578,19 @@ class _StudyProgressScreenState extends State<StudyProgressScreen> {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: () {
+                          final selectedCount = _selectedLecturesMap.values.where((v) => v).length;
+                          if (widget.uploadedFiles.isEmpty || selectedCount == 0) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('الرجاء اختيار محاضرة واحدة على الأقل لتكوين الامتحان!'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('يا ${widget.userName}، جاري إنشاء اختبار مكون من $_questionCount سؤال...'),
+                              content: Text('يا ${widget.userName}، جاري إنشاء امتحان ($selectedCount محاضرات محددة)...'),
                               backgroundColor: Colors.indigo,
                             ),
                           );
@@ -573,83 +644,6 @@ class _StudyProgressScreenState extends State<StudyProgressScreen> {
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 12),
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        Chip(
-                          label: Text('نشط', style: TextStyle(color: Colors.white, fontSize: 11)),
-                          backgroundColor: Colors.green,
-                        ),
-                        Text(
-                          'خطة دراسة الأسبوع الحالي',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'متابعة ساعات المذاكرة والمحاضرات المتبقية لهذا الأسبوع.',
-                      style: TextStyle(color: Colors.grey, fontSize: 13),
-                      textAlign: TextAlign.right,
-                    ),
-                    const SizedBox(height: 10),
-                    LinearProgressIndicator(
-                      value: 0.7,
-                      backgroundColor: Colors.indigo.shade50,
-                      color: Colors.indigo,
-                      minHeight: 8,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildActionTile(
-                    title: 'بنك الأسئلة الشامل',
-                    icon: Icons.menu_book_outlined,
-                    color: Colors.indigo,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildActionTile(
-                    title: 'مراجعة المحاضرات',
-                    icon: Icons.rate_review_outlined,
-                    color: Colors.blue.shade700,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: const ListTile(
-                leading: Icon(Icons.bar_chart, color: Colors.indigo, size: 30),
-                title: Text(
-                  'ملخص التقدم الكلي',
-                  textAlign: TextAlign.right,
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Text(
-                  'أنجزت 65% من الإختبارات والمراجعات لهذا الفصل',
-                  textAlign: TextAlign.right,
-                  style: TextStyle(fontSize: 12),
-                ),
-              ),
             ),
           ],
         ),
@@ -708,35 +702,6 @@ class _StudyProgressScreenState extends State<StudyProgressScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildActionTile({
-    required String title,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-          ),
-          const SizedBox(width: 8),
-          Icon(icon, color: color),
-        ],
       ),
     );
   }
@@ -918,7 +883,14 @@ class _SmartChatScreenState extends State<SmartChatScreen> {
 // 4. شاشة تفاصيل المقرر وإدراج المحاضرات
 // ==========================================
 class CourseDetailsScreen extends StatefulWidget {
-  const CourseDetailsScreen({super.key});
+  final Function(List<PlatformFile>) onFilesUpdated;
+  final List<PlatformFile> currentFiles;
+
+  const CourseDetailsScreen({
+    super.key,
+    required this.onFilesUpdated,
+    required this.currentFiles,
+  });
 
   @override
   State<CourseDetailsScreen> createState() => _CourseDetailsScreenState();
@@ -934,7 +906,13 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
   String _addedCourseHours = "";
   String _addedCourseLang = "";
 
-  final List<PlatformFile> _lectureFiles = [];
+  late List<PlatformFile> _lectureFiles;
+
+  @override
+  void initState() {
+    super.initState();
+    _lectureFiles = List.from(widget.currentFiles);
+  }
 
   Future<void> _pickLectureFile() async {
     try {
@@ -948,6 +926,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
         setState(() {
           _lectureFiles.addAll(result.files);
         });
+        widget.onFilesUpdated(_lectureFiles);
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1117,6 +1096,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                                 setState(() {
                                   _lectureFiles.removeAt(index);
                                 });
+                                widget.onFilesUpdated(_lectureFiles);
                               },
                             ),
                             title: Text(
