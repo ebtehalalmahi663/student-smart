@@ -19,7 +19,7 @@ class SmartAcademicAssistantApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.indigo,
         scaffoldBackgroundColor: const Color(0xFFF5F7FA),
-        fontFamily: 'Roboto',
+        fontFamily: 'Roboto', 
       ),
       home: const WelcomeScreen(),
     );
@@ -40,7 +40,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   final _nameController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  // خريطة الكليات والأقسام وعدد السمسترات الخاصة بكل كلية
   final Map<String, Map<String, dynamic>> _collegeData = {
     'كلية علوم الحاسوب وتقانة المعلومات': {
       'departments': ['تقانة المعلومات', 'نظم المعلومات', 'علوم الحاسوب'],
@@ -83,7 +82,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     _selectedSemester = 'السمستر 1';
   }
 
-  // تحديث الأقسام والسمسترات عند تغيير الكلية
   void _onCollegeChanged(String? newCollege) {
     if (newCollege != null) {
       setState(() {
@@ -131,7 +129,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 child: Form(
                   key: _formKey,
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
+                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.school, size: 60, color: Colors.indigo),
                       const SizedBox(height: 10),
@@ -146,8 +144,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         style: TextStyle(color: Colors.grey, fontSize: 13),
                       ),
                       const SizedBox(height: 20),
-
-                      // إدخال الاسم
                       TextFormField(
                         controller: _nameController,
                         textAlign: TextAlign.right,
@@ -165,8 +161,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         ),
                       ),
                       const SizedBox(height: 15),
-
-                      // اختيار الكلية
                       DropdownButtonFormField<String>(
                         value: _selectedCollege,
                         isExpanded: true,
@@ -184,8 +178,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         onChanged: _onCollegeChanged,
                       ),
                       const SizedBox(height: 15),
-
-                      // اختيار القسم
                       DropdownButtonFormField<String>(
                         value: _selectedDepartment,
                         isExpanded: true,
@@ -205,8 +197,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         },
                       ),
                       const SizedBox(height: 15),
-
-                      // اختيار السمستر
                       DropdownButtonFormField<String>(
                         value: _selectedSemester,
                         isExpanded: true,
@@ -226,8 +216,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         },
                       ),
                       const SizedBox(height: 25),
-
-                      // زر الدخول
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
@@ -256,7 +244,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 }
 // ==========================================
-// الشاشة الرئيسية لربط الشاشات الثلاث
+// 2. الواجهة الرئيسية والتنقل
 // ==========================================
 class MainNavigationScreen extends StatefulWidget {
   final String userName;
@@ -277,58 +265,32 @@ class MainNavigationScreen extends StatefulWidget {
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  int _selectedIndex = 0; // تغيير البداية لشاشة مقياس المذاكرة مباشرة
-
-  // قائمة الملفات المضافة مشتركة بين الشاشات
-  List<PlatformFile> uploadedFiles = [];
-
-  void _updateFiles(List<PlatformFile> files) {
-    setState(() {
-      uploadedFiles = files;
-    });
-  }
+  int _currentIndex = 0;
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> screens = [
-      StudyProgressScreen(
+    final List<Widget> pages = [
+      HomeScreen(
         userName: widget.userName,
         college: widget.college,
         department: widget.department,
         semester: widget.semester,
-        uploadedFiles: uploadedFiles,
       ),
-      SmartChatScreen(userName: widget.userName),
-      CourseDetailsScreen(
-        onFilesUpdated: _updateFiles,
-        currentFiles: uploadedFiles,
-      ),
+      SmartChatScreen(semester: widget.semester),
+      QuizScreen(semester: widget.semester),
     ];
 
     return Scaffold(
-      body: screens[_selectedIndex],
+      body: pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
+        currentIndex: _currentIndex,
+        onTap: (index) => setState(() => _currentIndex = index),
         selectedItemColor: Colors.indigo,
         unselectedItemColor: Colors.grey,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.help_outline),
-            label: 'مقياس المذاكرة',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble_outline),
-            label: 'الشات الذكي',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bookmark_border),
-            label: 'تفاصيل المقرر',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: 'المقررات'),
+          BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'الشات الذكي'),
+          BottomNavigationBarItem(icon: Icon(Icons.quiz), label: 'قياس المذاكرة'),
         ],
       ),
     );
@@ -336,375 +298,144 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // ==========================================
-// 2. شاشة مقياس المذاكرة (تكوين الاختبار)
+// شاشة المقررات والمواد
 // ==========================================
-class StudyProgressScreen extends StatefulWidget {
+class HomeScreen extends StatefulWidget {
   final String userName;
   final String college;
   final String department;
   final String semester;
-  final List<PlatformFile> uploadedFiles;
 
-  const StudyProgressScreen({
+  const HomeScreen({
     super.key,
     required this.userName,
     required this.college,
     required this.department,
     required this.semester,
-    required this.uploadedFiles,
   });
 
   @override
-  State<StudyProgressScreen> createState() => _StudyProgressScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _StudyProgressScreenState extends State<StudyProgressScreen> {
-  int _questionCount = 10;
-  String _questionType = 'اختيار من متعدد (MCQ)';
+class _HomeScreenState extends State<HomeScreen> {
+  final Map<String, List<String>> _coursesData = {
+    'السمستر 1': ['مقدمة حاسوب', 'ریاضيات 1', 'لغة إنجليزية 1', 'المهارات الأكاديمية'],
+    'السمستر 2': ['برمجة 1 (Java)', 'فيزياء حاسوب', 'رياضيات 2', 'إحصاء احتمالات'],
+    'السمستر 3': ['برمجة 2 (OOP)', 'تراكيب بيانات', 'تصميم منطقي', 'رياضيات متقطعة'],
+    'السمستر 4': ['خوارزميات', 'قواعد بيانات', 'هندسة سوفتوير', 'معمارية الحاسوب'],
+    'السمستر 5': ['ذكاء اصطناعي', 'شبكات حاسوب', 'أنظمة تشغيل', 'تحليل نظم'],
+    'السمستر 6': ['تعلم آلة', 'أمن معلومات', 'تطوير ويب', 'مشروع 1'],
+    'السمستر 7': ['معالجة لغة طبيعية', 'رؤية حاسوبية', 'حوسبة سحابية', 'تطوير تطبيقات'],
+    'السمستر 8': ['تنقيب بيانات', 'أنظمة وزعة', 'إدارة مشاريع', 'أخلاقيات مهنة'],
+    'السمستر 9': ['مشروع تخرج 1', 'تدريب ميداني', 'حوسبة موجهة'],
+    'السمستر 10': ['مشروع تخرج 2', 'مناقشة علمية', 'موضوعات متقدمة'],
+  };
 
-  // خريطة لحفظ المحاضرات المختارة (صح أم لا)
-  final Map<String, bool> _selectedLecturesMap = {};
+  final Map<String, List<PlatformFile>> _uploadedPdfs = {};
 
-  final List<int> _questionCountOptions = [5, 10, 15, 20, 30];
-  final List<String> _questionTypes = [
-    'اختيار من متعدد (MCQ)',
-    'صح أو خطأ',
-    'أسئلة مقالية قصيرة',
-    'مزيج من جميع الأنواع',
-  ];
+  Future<void> _pickPDF(String courseName) async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
 
-  @override
-  void initState() {
-    super.initState();
-    _syncLectures();
-  }
-
-  @override
-  void didUpdateWidget(covariant StudyProgressScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _syncLectures();
-  }
-
-  // مزامنة الملفات المضافة مع خريطة التحديد (علامات الصح)
-  void _syncLectures() {
-    for (var file in widget.uploadedFiles) {
-      if (!_selectedLecturesMap.containsKey(file.name)) {
-        _selectedLecturesMap[file.name] = true; // تحديد الكل افتراضياً
+    if (result != null && result.files.isNotEmpty) {
+      setState(() {
+        _uploadedPdfs.putIfAbsent(courseName, () => []).add(result.files.first);
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تم رفع ملف "${result.files.first.name}" بنجاح!')),
+        );
       }
+    }
+  }
+
+  void _openPdfFile(PlatformFile file) {
+    if (file.path != null) {
+      OpenFilex.open(file.path!);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر فتح الملف مباشرة')),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    List<String> currentCourses = _coursesData[widget.semester] ?? ['مادة عامة 1', 'مادة عامة 2'];
+
     return Scaffold(
       appBar: AppBar(
         title: Text('${widget.college} - ${widget.semester}'),
-        centerTitle: true,
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAlignment.start,
           children: [
-            // بطاقة الترحيب
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.indigo.shade50,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.indigo.shade200),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.notifications_active, color: Colors.indigo),
+                  const Icon(Icons.person, color: Colors.indigo, size: 30),
                   const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'أهلاً بك يا ${widget.userName}! (قسم ${widget.department}) جاهز لاختبار معلوماتك اليوم؟',
-                      textAlign: TextAlign.right,
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo),
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAlignment.start,
+                    children: [
+                      Text('مرحباً: ${widget.userName}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text('القسم: ${widget.department}', style: const TextStyle(color: Colors.grey)),
+                    ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 15),
-
-            Card(
-              elevation: 3,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-              color: Colors.white,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: const [
-                        Text(
-                          'تكوين اختبار جديد',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.indigo,
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        Icon(Icons.quiz, color: Colors.indigo),
-                      ],
-                    ),
-                    const SizedBox(height: 15),
-                    
-                    const Text('اختر المحاضرات للداخلة في الامتحان:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    const SizedBox(height: 8),
-
-                    // قائمة المحاضرات الديناميكية المضافة مع علامات صح
-                    widget.uploadedFiles.isEmpty
-                        ? Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.orange.shade50,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: Colors.orange.shade200),
-                            ),
-                            child: const Text(
-                              '⚠️ لم تقم بإضافة أي محاضرات بعد!\nيرجى الانتقال لشاشة "تفاصيل المقرر" وإضافة ملفات المحاضرات أولاً.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold),
-                            ),
-                          )
-                        : Container(
-  constraints: const BoxConstraints(
-    maxHeight: 180, // ✅ الصحيح تمريرها عبر BoxConstraints
-  ),
-  // ...
-)
-                    
-                
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade50,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: Colors.grey.shade300),
-                            ),
-                            child: ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: widget.uploadedFiles.length,
-                              itemBuilder: (context, index) {
-                                final fileName = widget.uploadedFiles[index].name;
-                                final isSelected = _selectedLecturesMap[fileName] ?? true;
-
-                                return CheckboxListTile(
-                                  activeColor: Colors.indigo,
-                                  dense: true,
-                                  title: Text(
-                                    fileName,
-                                    textAlign: TextAlign.right,
-                                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                                  ),
-                                  value: isSelected,
-                                  onChanged: (bool? value) {
-                                    setState(() {
-                                      _selectedLecturesMap[fileName] = value ?? false;
-                                    });
-                                  },
-                                );
-                              },
-                            ),
-                          ),
-
-                    const SizedBox(height: 15),
-                    Row(
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              const Text('نوع الأسئلة:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                              const SizedBox(height: 6),
-                              DropdownButtonFormField<String>(
-                                value: _questionType,
-                                isExpanded: true,
-                                decoration: InputDecoration(
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                                  fillColor: Colors.grey.shade50,
-                                  filled: true,
-                                ),
-                                items: _questionTypes.map((type) {
-                                  return DropdownMenuItem(
-                                    value: type,
-                                    child: Text(type, style: const TextStyle(fontSize: 12)),
-                                  );
-                                }).toList(),
-                                onChanged: (val) {
-                                  if (val != null) setState(() => _questionType = val);
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          flex: 1,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              const Text('عدد الأسئلة:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                              const SizedBox(height: 6),
-                              DropdownButtonFormField<int>(
-                                value: _questionCount,
-                                decoration: InputDecoration(
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                                  fillColor: Colors.grey.shade50,
-                                  filled: true,
-                                ),
-                                items: _questionCountOptions.map((count) {
-                                  return DropdownMenuItem(
-                                    value: count,
-                                    child: Text('$count أسئلة', style: const TextStyle(fontSize: 12)),
-                                  );
-                                }).toList(),
-                                onChanged: (val) {
-                                  if (val != null) setState(() => _questionCount = val);
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          final selectedCount = _selectedLecturesMap.values.where((v) => v).length;
-                          if (widget.uploadedFiles.isEmpty || selectedCount == 0) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('الرجاء اختيار محاضرة واحدة على الأقل لتكوين الامتحان!'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
-                          }
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('يا ${widget.userName}، جاري إنشاء امتحان ($selectedCount محاضرات محددة)...'),
-                              backgroundColor: Colors.indigo,
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.indigo,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        icon: const Icon(Icons.auto_awesome, color: Colors.white),
-                        label: const Text(
-                          'تكوين الامتحان الآن',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
             const SizedBox(height: 20),
-            const Text(
-              'خيارات مقياس المذاكرة',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.indigo,
-              ),
-              textAlign: TextAlign.right,
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildOptionCard(
-                    title: 'اختبار تجريبي: الذكاء الاصطناعي',
-                    subtitle: '4/10 المنجز',
-                    icon: Icons.quiz_outlined,
-                    badgeText: 'نشط',
-                    progress: 0.4,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildOptionCard(
-                    title: 'اختبار سريع: الفصل الأول',
-                    subtitle: '6/10 المنجز',
-                    icon: Icons.assignment_outlined,
-                    badgeText: 'مكتمل',
-                    progress: 0.6,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOptionCard({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required String badgeText,
-    required double progress,
-  }) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.indigo.shade50,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    badgeText,
-                    style: const TextStyle(color: Colors.indigo, fontSize: 10, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Icon(icon, color: Colors.indigo),
-              ],
-            ),
+            const Text('مواد هذا السمستر:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
-            Text(
-              title,
-              textAlign: TextAlign.right,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: const TextStyle(color: Colors.grey, fontSize: 11),
-            ),
-            const SizedBox(height: 8),
-            LinearProgressIndicator(
-              value: progress,
-              backgroundColor: Colors.grey.shade200,
-              color: Colors.indigo,
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: currentCourses.length,
+              itemBuilder: (context, index) {
+                String course = currentCourses[index];
+                List<PlatformFile> files = _uploadedPdfs[course] ?? [];
+
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ExpansionTile(
+                    leading: const Icon(Icons.book, color: Colors.indigo),
+                    title: Text(course, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.upload_file, color: Colors.indigo),
+                      onPressed: () => _pickPDF(course),
+                    ),
+                    children: [
+                      if (files.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Text('لا توجد ملفات مرفوعة لهذه المادة', style: TextStyle(color: Colors.grey)),
+                        )
+                      else
+                        ...files.map(
+                          (file) => ListTile(
+                            leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
+                            title: Text(file.name),
+                            subtitle: Text('${(file.size / 1024).toStringAsFixed(1)} KB'),
+                            onTap: () => _openPdfFile(file),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -712,170 +443,105 @@ class _StudyProgressScreenState extends State<StudyProgressScreen> {
     );
   }
 }
+
 // ==========================================
-// 3. شاشة الشات الذكي
+// 3. شاشة الشات الذكي (Smart Chat)
 // ==========================================
 class SmartChatScreen extends StatefulWidget {
-  final String userName;
-
-  const SmartChatScreen({super.key, required this.userName});
+  final String semester;
+  const SmartChatScreen({super.key, required this.semester});
 
   @override
   State<SmartChatScreen> createState() => _SmartChatScreenState();
 }
 
 class _SmartChatScreenState extends State<SmartChatScreen> {
-  final TextEditingController _controller = TextEditingController();
-  late List<Map<String, String>> _messages;
+  final TextEditingController _chatController = TextEditingController();
+  final List<Map<String, String>> _messages = [];
   bool _isLoading = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _messages = [
-      {
-        'sender': 'ai',
-        'text': 'مرحباً بك يا ${widget.userName}! أنا مساعدك الأكاديمي الذكي. يمكنك الاستفسار عن محتوى أي مقرر أو ملف قم بإدراجه.'
-      }
-    ];
-  }
-
   Future<void> _sendMessage() async {
-    final text = _controller.text.trim();
-    if (text.isEmpty) return;
+    String query = _chatController.text.trim();
+    if (query.isEmpty) return;
 
     setState(() {
-      _messages.add({'sender': 'user', 'text': text});
+      _messages.add({'sender': 'user', 'text': query});
       _isLoading = true;
     });
-    _controller.clear();
+    _chatController.clear();
 
     try {
-      final Uri url = Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AQ.Ab8RN6L2NMyfy7EZKalu8iGnJ2j8y0EqHE3_QtZbCVnloMfiTQ',
-      );
-
       final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('https://api.openai.com/v1/chat/completions'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer YOUR_API_KEY_HERE',
+        },
         body: jsonEncode({
-          'contents': [
-            {
-              'parts': [
-                {'text': text}
-              ]
-            }
+          "model": "gpt-3.5-turbo",
+          "messages": [
+            {"role": "system", "content": "أنت مساعد أكاديمي ذكي تدرس في ${widget.semester}."},
+            {"role": "user", "content": query}
           ]
         }),
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final replyText = data['candidates']?[0]?['content']?['parts']?[0]?['text'] ?? 'لم أتمكن من الحصول على إجابة.';
-        setState(() {
-          _messages.add({'sender': 'ai', 'text': replyText});
-        });
+        var data = jsonDecode(utf8.decode(response.bodyBytes));
+        String aiReply = data['choices'][0]['message']['content'];
+        setState(() => _messages.add({'sender': 'ai', 'text': aiReply}));
       } else {
-        setState(() {
-          _messages.add({
-            'sender': 'ai',
-            'text': 'عذراً يا ${widget.userName}، حدث خطأ أثناء الاتصال بالذكاء الاصطناعي.'
-          });
-        });
+        setState(() => _messages.add({'sender': 'ai', 'text': 'حدث خطأ في الاتصال بالسيرفر.'}));
       }
     } catch (e) {
-      setState(() {
-        _messages.add({
-          'sender': 'ai',
-          'text': 'تعذر الاتصال بالشبكة:\n$e'
-        });
-      });
+      setState(() => _messages.add({'sender': 'ai', 'text': 'تأكد من الاتصال بالإنترنت.'}));
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('المساعد الذكي'),
-        centerTitle: true,
-        backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
-      ),
+      appBar: AppBar(title: const Text('الشات الذكي الأكاديمي'), backgroundColor: Colors.indigo, foregroundColor: Colors.white),
       body: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: Colors.indigo.shade50,
-            child: Row(
-              children: const [
-                Icon(Icons.auto_awesome, color: Colors.indigo),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'الاستفسار من ملفات المحاضرات المرفقة',
-                    style: TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
-            ),
-          ),
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               itemCount: _messages.length,
               itemBuilder: (context, index) {
-                final msg = _messages[index];
-                final isUser = msg['sender'] == 'user';
+                bool isUser = _messages[index]['sender'] == 'user';
                 return Align(
                   alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
                   child: Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(14),
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: isUser ? Colors.indigo.shade700 : Colors.grey.shade200,
+                      color: isUser ? Colors.indigo : Colors.grey.shade300,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      msg['text'] ?? '',
-                      style: TextStyle(
-                        color: isUser ? Colors.white : Colors.black87,
-                        fontSize: 15,
-                      ),
+                      _messages[index]['text'] ?? '',
+                      style: TextStyle(color: isUser ? Colors.white : Colors.black8d),
                     ),
                   ),
                 );
               },
             ),
           ),
-          if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: CircularProgressIndicator(),
-            ),
-          Container(
-            padding: const EdgeInsets.all(8),
-            color: Colors.white,
+          if (_isLoading) const LinearProgressIndicator(),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
             child: Row(
               children: [
-                IconButton(
-                  icon: const Icon(Icons.send, color: Colors.indigo),
-                  onPressed: _sendMessage,
-                ),
                 Expanded(
                   child: TextField(
-                    controller: _controller,
-                    textAlign: TextAlign.right,
-                    decoration: const InputDecoration(
-                      hintText: 'اكتب سؤالك هنا...',
-                      border: InputBorder.none,
-                    ),
+                    controller: _chatController,
+                    decoration: const InputDecoration(hintText: 'اسأل عن أي مفهوم دراسي...', border: OutlineInputBorder()),
                   ),
                 ),
+                IconButton(icon: const Icon(Icons.send, color: Colors.indigo), onPressed: _sendMessage),
               ],
             ),
           ),
@@ -886,258 +552,66 @@ class _SmartChatScreenState extends State<SmartChatScreen> {
 }
 
 // ==========================================
-// 4. شاشة تفاصيل المقرر وإدراج المحاضرات
+// 4. شاشة قياس المذاكرة (اختبارات)
 // ==========================================
-class CourseDetailsScreen extends StatefulWidget {
-  final Function(List<PlatformFile>) onFilesUpdated;
-  final List<PlatformFile> currentFiles;
-
-  const CourseDetailsScreen({
-    super.key,
-    required this.onFilesUpdated,
-    required this.currentFiles,
-  });
+class QuizScreen extends StatefulWidget {
+  final String semester;
+  const QuizScreen({super.key, required this.semester});
 
   @override
-  State<CourseDetailsScreen> createState() => _CourseDetailsScreenState();
+  State<QuizScreen> createState() => _QuizScreenState();
 }
 
-class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
-  final _nameController = TextEditingController();
-  final _hoursController = TextEditingController();
-  final _labLangController = TextEditingController();
-
-  bool _isCourseAdded = false;
-  String _addedCourseName = "";
-  String _addedCourseHours = "";
-  String _addedCourseLang = "";
-
-  late List<PlatformFile> _lectureFiles;
-
-  @override
-  void initState() {
-    super.initState();
-    _lectureFiles = List.from(widget.currentFiles);
-  }
-
-  Future<void> _pickLectureFile() async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        allowMultiple: true,
-        type: FileType.custom,
-        allowedExtensions: ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt'],
-      );
-
-      if (result != null) {
-        setState(() {
-          _lectureFiles.addAll(result.files);
-        });
-        widget.onFilesUpdated(_lectureFiles);
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('حدث خطأ أثناء اختيار الملف: $e')),
-      );
+class _QuizScreenState extends State<QuizScreen> {
+  final List<Map<String, dynamic>> _questions = [
+    {
+      'question': 'ما هو المفهوم الأساسي للبرمجة كائنية التوجه (OOP)؟',
+      'options': ['الوراثة والتغليف', 'التجميع والتفكيك', 'المصفوفات الثابتة', 'لا شيء مما سبق'],
+      'answer': 0
+    },
+    {
+      'question': 'أي مما يلي يستخدم لإدارة قاعدة البيانات؟',
+      'options': ['HTML', 'SQL', 'CSS', 'Flutter'],
+      'answer': 1
     }
-  }
+  ];
 
-  Future<void> _openFile(PlatformFile file) async {
-    if (file.path != null) {
-      await OpenFilex.open(file.path!);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذر فتح الملف (المسار غير صالح)')),
-      );
-    }
-  }
+  Map<int, int> _selectedAnswers = {};
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('إدارة و تفاصيل المقرر'),
-        centerTitle: true,
-        backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'بيانات المقرر الأكاديمي',
-              textAlign: TextAlign.right,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _nameController,
-              textAlign: TextAlign.right,
-              decoration: const InputDecoration(
-                labelText: 'اسم المقرر',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.book),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _labLangController,
-                    textAlign: TextAlign.right,
-                    decoration: const InputDecoration(
-                      labelText: 'لغة المعمل (إن وجدت)',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.code),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: TextFormField(
-                    controller: _hoursController,
-                    keyboardType: TextInputType.number,
-                    textAlign: TextAlign.right,
-                    decoration: const InputDecoration(
-                      labelText: 'عدد الساعات',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.access_time),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 15),
-            ElevatedButton.icon(
-              onPressed: () {
-                if (_nameController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('الرجاء كتابة اسم المقرر أولاً')),
-                  );
-                  return;
-                }
-                setState(() {
-                  _isCourseAdded = true;
-                  _addedCourseName = _nameController.text.trim();
-                  _addedCourseHours = _hoursController.text.trim();
-                  _addedCourseLang = _labLangController.text.trim();
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('تم حفظ بيانات المقرر بنجاح!')),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.indigo,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              icon: const Icon(Icons.save, color: Colors.white),
-              label: const Text('حفظ وإضافة المقرر', style: TextStyle(color: Colors.white, fontSize: 16)),
-            ),
-            const SizedBox(height: 25),
-            const Divider(thickness: 1.5),
-            if (_isCourseAdded) ...[
-              Card(
-                color: Colors.indigo.shade50,
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text('المقرر الحالي: $_addedCourseName', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo)),
-                      const SizedBox(height: 4),
-                      Text('عدد الساعات: ${_addedCourseHours.isEmpty ? "غير محدد" : _addedCourseHours}  |  لغة المعمل: ${_addedCourseLang.isEmpty ? "لا يوجد" : _addedCourseLang}', style: const TextStyle(fontSize: 12, color: Colors.black87)),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 15),
-              ElevatedButton.icon(
-                onPressed: _pickLectureFile,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.indigo.shade100,
-                  foregroundColor: Colors.indigo.shade900,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-                icon: const Icon(Icons.file_upload_outlined),
-                label: const Text('إضافة ملف محاضرات من الجهاز'),
-              ),
-              const SizedBox(height: 15),
-              const Text(
-                'ملفات المحاضرات المضافة:',
-                textAlign: TextAlign.right,
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              _lectureFiles.isEmpty
-                  ? Container(
-                      padding: const EdgeInsets.all(20),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Text(
-                        'لم يتم إضافة أي ملفات بعد. اضغط على زر الإضافة أعلاه.',
-                        style: TextStyle(color: Colors.grey, fontSize: 13),
-                        textAlign: TextAlign.center,
-                      ),
-                    )
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _lectureFiles.length,
-                      itemBuilder: (context, index) {
-                        final file = _lectureFiles[index];
-                        final sizeInMb = (file.size / (1024 * 1024)).toStringAsFixed(2);
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: ListTile(
-                            leading: IconButton(
-                              icon: const Icon(Icons.delete_outline, color: Colors.red),
-                              onPressed: () {
-                                setState(() {
-                                  _lectureFiles.removeAt(index);
-                                });
-                                widget.onFilesUpdated(_lectureFiles);
-                              },
-                            ),
-                            title: Text(
-                              file.name,
-                              textAlign: TextAlign.right,
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Text(
-                              '$sizeInMb MB',
-                              textAlign: TextAlign.right,
-                              style: const TextStyle(fontSize: 11, color: Colors.grey),
-                            ),
-                            trailing: const Icon(Icons.picture_as_pdf, color: Colors.indigo),
-                            onTap: () => _openFile(file),
-                          ),
-                        );
+      appBar: AppBar(title: const Text('قياس المستوى الأكاديمي'), backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+      body: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _questions.length,
+        itemBuilder: (context, qIndex) {
+          var q = _questions[qIndex];
+          return Card(
+            margin: const EdgeInsets.only(bottom: 16),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAlignment.start,
+                children: [
+                  Text('${qIndex + 1}. ${q['question']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  ...List.generate(
+                    q['options'].length,
+                    (oIndex) => CheckboxListTile(
+                      title: Text(q['options'][oIndex]),
+                      value: _selectedAnswers[qIndex] == oIndex,
+                      onChanged: (bool? value) {
+                        setState(() {
+                          if (value == true) _selectedAnswers[qIndex] = oIndex;
+                        });
                       },
                     ),
-            ] else ...[
-              Container(
-                padding: const EdgeInsets.all(20),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Text(
-                  'يرجى إدخال بيانات المقرر وحفظه أولاً لتتمكن من إضافة ملفات المحاضرات.',
-                  style: TextStyle(color: Colors.grey),
-                  textAlign: TextAlign.center,
-                ),
+                  ),
+                ],
               ),
-            ]
-          ],
-        ),
+            ),
+          );
+        },
       ),
     );
   }
