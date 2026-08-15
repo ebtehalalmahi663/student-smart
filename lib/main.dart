@@ -478,7 +478,13 @@ class _StudyProgressScreenState extends State<StudyProgressScreen> {
                             ),
                           )
                         : Container(
-                            maxHeight: 180,
+  constraints: const BoxConstraints(
+    maxHeight: 180, // ✅ الصحيح تمريرها عبر BoxConstraints
+  ),
+  // ...
+)
+                    
+                
                             decoration: BoxDecoration(
                               color: Colors.grey.shade50,
                               borderRadius: BorderRadius.circular(10),
