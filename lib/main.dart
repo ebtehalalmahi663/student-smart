@@ -391,6 +391,340 @@ class StudyProgressScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+class StudyProgressScreen extends StatefulWidget {
+  const StudyProgressScreen({super.key});
+
+  @override
+  State<StudyProgressScreen> createState() => _StudyProgressScreenState();
+}
+
+class _StudyProgressScreenState extends State<StudyProgressScreen> {
+  // متغيرات إعداد الاختبار
+  String? _selectedLecture = 'جميع المحاضرات المضافة';
+  int _questionCount = 10;
+  String _questionType = 'اختيار من متعدد (MCQ)';
+
+  // قائمة وهمية تجريبية + قائمة تفاعلية للمحاضرات
+  final List<String> _availableLectures = [
+    'جميع المحاضرات المضافة',
+    'المحاضرة 1: مقدمة في المقرر',
+    'المحاضرة 2: المفاهيم الأساسية',
+    'المحاضرة 3: التطبيقات العملية',
+  ];
+
+  final List<int> _questionCountOptions = [5, 10, 15, 20, 30];
+  final List<String> _questionTypes = [
+    'اختيار من متعدد (MCQ)',
+    'صح أو خطأ',
+    'أسئلة مقالية قصيرة',
+    'مزيج من جميع الأنواع',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('تقانة المعلومات - سمستر 6'),
+        centerTitle: true,
+        backgroundColor: Colors.indigo,
+        foregroundColor: Colors.white,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // --- قسم تكوين الاختبار الجديد ---
+            Card(
+              elevation: 3,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              color: Colors.white,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: const [
+                        Text(
+                          'تكوين اختبار جديد',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.indigo,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Icon(Icons.quiz, color: Colors.indigo),
+                      ],
+                    ),
+                    const SizedBox(height: 15),
+
+                    // 1. تحديد المحاضرات
+                    const Text('اختر المحاضرة / الملف:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    const SizedBox(height: 6),
+                    DropdownButtonFormField<String>(
+                      value: _selectedLecture,
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        fillColor: Colors.grey.shade50,
+                        filled: true,
+                      ),
+                      items: _availableLectures.map((lecture) {
+                        return DropdownMenuItem(
+                          value: lecture,
+                          child: Text(lecture, textAlign: TextAlign.right, style: const TextStyle(fontSize: 13)),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        setState(() {
+                          _selectedLecture = val;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+
+                    // 2. عدد الأسئلة ونوع الأسئلة
+                    Row(
+                      children: [
+                        // نوع الأسئلة
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              const Text('نوع الأسئلة:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                              const SizedBox(height: 6),
+                              DropdownButtonFormField<String>(
+                                value: _questionType,
+                                isExpanded: true,
+                                decoration: InputDecoration(
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                  fillColor: Colors.grey.shade50,
+                                  filled: true,
+                                ),
+                                items: _questionTypes.map((type) {
+                                  return DropdownMenuItem(
+                                    value: type,
+                                    child: Text(type, style: const TextStyle(fontSize: 12)),
+                                  );
+                                }).toList(),
+                                onChanged: (val) {
+                                  if (val != null) setState(() => _questionType = val);
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+
+                        // عدد الأسئلة
+                        Expanded(
+                          flex: 1,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              const Text('عدد الأسئلة:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                              const SizedBox(height: 6),
+                              DropdownButtonFormField<int>(
+                                value: _questionCount,
+                                decoration: InputDecoration(
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                  fillColor: Colors.grey.shade50,
+                                  filled: true,
+                                ),
+                                items: _questionCountOptions.map((count) {
+                                  return DropdownMenuItem(
+                                    value: count,
+                                    child: Text('$count أسئلة', style: const TextStyle(fontSize: 12)),
+                                  );
+                                }).toList(),
+                                onChanged: (val) {
+                                  if (val != null) setState(() => _questionCount = val);
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+
+                    // زر تكوين الامتحان
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('جاري إنشاء امتحان مكون من $_questionCount سؤال لـ ($_selectedLecture)...'),
+                              backgroundColor: Colors.indigo,
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.indigo,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        icon: const Icon(Icons.auto_awesome, color: Colors.white),
+                        label: const Text(
+                          'تكوين الامتحان الآن',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // --- باقي عناصر الصفحة السابقة بدون أي تغيير ---
+            const Text(
+              'خيارات مقياس المذاكرة',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.indigo,
+              ),
+              textAlign: TextAlign.right,
+            ),
+            const SizedBox(height: 12),
+
+            Row(
+              children: [
+                Expanded(
+                  child: _buildOptionCard(
+                    title: 'اختبار تجريبي: الذكاء الاصطناعي',
+                    subtitle: '4/10 المنجز',
+                    icon: Icons.quiz_outlined,
+                    badgeText: 'نشط',
+                    progress: 0.4,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildOptionCard(
+                    title: 'اختبار سريع: الفصل الأول',
+                    subtitle: '6/10 المنجز',
+                    icon: Icons.assignment_outlined,
+                    badgeText: 'مكتمل',
+                    progress: 0.6,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [
+                        Chip(
+                          label: Text('نشط', style: TextStyle(color: Colors.white, fontSize: 11)),
+                          backgroundColor: Colors.green,
+                        ),
+                        Text(
+                          'خطة دراسة الأسبوع الحالي',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'متابعة ساعات المذاكرة والمحاضرات المتبقية لهذا الأسبوع.',
+                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                      textAlign: TextAlign.right,
+                    ),
+                    const SizedBox(height: 10),
+                    LinearProgressIndicator(
+                      value: 0.7,
+                      backgroundColor: Colors.indigo.shade50,
+                      color: Colors.indigo,
+                      minHeight: 8,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            Row(
+              children: [
+                Expanded(
+                  child: _buildActionTile(
+                    title: 'بنك الأسئلة الشامل',
+                    icon: Icons.menu_book_outlined,
+                    color: Colors.indigo,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildActionTile(
+                    title: 'مراجعة المحاضرات',
+                    icon: Icons.rate_review_outlined,
+                    color: Colors.blue.shade700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: const ListTile(
+                leading: Icon(Icons.bar_chart, color: Colors.indigo, size: 30),
+                title: Text(
+                  'ملخص التقدم الكلي',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(
+                  'أنجزت 65% من الإختبارات والمراجعات لهذا الفصل',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(fontSize: 12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOptionCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required String badgeText,
+    required double progress,
+  }) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
@@ -457,6 +791,7 @@ class StudyProgressScreen extends StatelessWidget {
     );
   }
 }
+                
 
 class CourseDetailsScreen extends StatefulWidget {
   const CourseDetailsScreen({super.key});
