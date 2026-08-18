@@ -1,20 +1,45 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:file_picker/file_picker.dart';
 
-void main() {
-  runApp(const StudentSmartApp());
-}
-
-// 1. نموذج بيانات المقرر
+// نموذج بيانات المقرر المحدث بدعم الحفظ وملفات المحاضرات
 class Course {
   final String name;
   final int hours;
   final String labLanguages;
+  List<String> files; // قائمة بأسماء/مسارات الملفات المرفوعة
 
   Course({
     required this.name,
     required this.hours,
     required this.labLanguages,
-  });
+    List<String>? files,
+  }) : files = files ?? [];
+
+  // تحويل البيانات إلى Map للحفظ
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'hours': hours,
+      'labLanguages': labLanguages,
+      'files': files,
+    };
+  }
+
+  // استرجاع البيانات من Map
+  factory Course.fromMap(Map<String, dynamic> map) {
+    return Course(
+      name: map['name'] ?? '',
+      hours: map['hours'] ?? 0,
+      labLanguages: map['labLanguages'] ?? '',
+      files: List<String>.from(map['files'] ?? []),
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory Course.fromJson(String source) => Course.fromMap(json.decode(source));
 }
 
 class StudentSmartApp extends StatelessWidget {
@@ -259,23 +284,55 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 }
 
 // الشاشة الرئيسية (مواد السمستر - فارغة بزار إضافة مقرر)
-class HomeScreen extends StatefulWidget {
-  final String college;
-  final String semester;
-
-  const HomeScreen({
-    Key? key,
-    required this.college,
-    required this.semester,
-  }) : super(key: key);
+class _HomeScreenState extends State<HomeScreen> {
+  List<Course> courses = [];
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
+  void initState() {
+    super.initState();
+    _loadCourses(); // تحميل المقررات المحفوظة فور فتح الشاشة
+  }
 
-class _HomeScreenState extends State<HomeScreen> {
-  // القائمة فارغة تماماً لعدم عرض أية مواد افتراضية
-  List<Course> courses = [];
+  // دالة تحميل المقررات من ذاكرة الهاتف
+  Future<void> _loadCourses() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? coursesData = prefs.getString('saved_courses_${widget.college}_${widget.semester}');
+    if (coursesData != null) {
+      final List<dynamic> decodedList = json.decode(coursesData);
+      setState(() {
+        courses = decodedList.map((item) => Course.fromMap(item)).toList();
+      });
+    }
+  }
+
+  // دالة حفظ المقررات في ذاكرة الهاتف
+  Future<void> _saveCourses() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String encodedData = json.encode(courses.map((c) => c.toMap()).toList());
+    await prefs.setString('saved_courses_${widget.college}_${widget.semester}', encodedData);
+  }
+
+  // دالة اختيار ورفع ملف محاضرة
+  Future<void> _pickAndUploadFile(int courseIndex) async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'doc', 'docx', 'ppt', 'pptx'],
+    );
+
+    if (result != null && result.files.single.name.isNotEmpty) {
+      String fileName = result.files.single.name;
+      setState(() {
+        courses[courseIndex].files.add(fileName);
+      });
+      await _saveCourses(); // حفظ التحديث فور رفع الملف
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تم رفع الملف: $fileName بنجاح')),
+        );
+      }
+    }
+  }
 
   void _logout() {
     Navigator.pushReplacement(
@@ -325,7 +382,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: const Text('إلغاء'),
               ),
               ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   if (nameController.text.trim().isNotEmpty) {
                     setState(() {
                       courses.add(
@@ -336,7 +393,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       );
                     });
-                    Navigator.pop(context);
+                    await _saveCourses(); // حفظ المقرر الجديد دائماً
+                    if (mounted) Navigator.pop(context);
                   }
                 },
                 child: const Text('إضافة'),
@@ -426,7 +484,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           return Card(
                             margin: const EdgeInsets.only(bottom: 12),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            child: ListTile(
+                            child: ExpansionTile(
                               leading: const Icon(Icons.book, color: Colors.indigo),
                               title: Text(course.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                               subtitle: Text(
@@ -434,8 +492,29 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               trailing: IconButton(
                                 icon: const Icon(Icons.file_upload_outlined, color: Colors.indigo),
-                                onPressed: () {},
+                                tooltip: 'رفع ملف المحاضرة',
+                                onPressed: () => _pickAndUploadFile(index),
                               ),
+                              children: [
+                                if (course.files.isNotEmpty) ...[
+                                  const Divider(),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                                    child: Align(
+                                      alignment: Alignment.centerRight,
+                                      child: Text(
+                                        'الملفات المرفوعة (${course.files.length}):',
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                      ),
+                                    ),
+                                  ),
+                                  ...course.files.map((file) => ListTile(
+                                        dense: true,
+                                        leading: const Icon(Icons.picture_as_pdf, color: Colors.red, size: 20),
+                                        title: Text(file, style: const TextStyle(fontSize: 13)),
+                                      )),
+                                ]
+                              ],
                             ),
                           );
                         },
@@ -448,6 +527,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
 // شاشة الشات الذكي
 class ChatScreen extends StatefulWidget {
   const ChatScreen({Key? key}) : super(key: key);
