@@ -451,7 +451,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const Icon(Icons.person, color: Colors.indigo, size: 30),
                   const SizedBox(width: 10),
                   Column(
-                    crossAxisAlignment: CrossAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('مرحباً: ${widget.userName}', style: const TextStyle(fontWeight: FontWeight.bold)),
                       Text('القسم: ${widget.department}', style: const TextStyle(color: Colors.grey)),
