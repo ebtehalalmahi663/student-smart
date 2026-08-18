@@ -1129,42 +1129,161 @@ class _QuizScreenState extends State<QuizScreen> {
     }
   ];
 
+  // خريطة لتخزين إجابات المستخدم: key هو رقم السؤال و value هو رقم الخيار المختار
   final Map<int, int> _selectedAnswers = {};
+  bool _showScore = false;
+  int _score = 0;
+
+  void _calculateScore() {
+    int scoreCounter = 0;
+    for (int i = 0; i < _questions.length; i++) {
+      if (_selectedAnswers[i] == _questions[i]['answer']) {
+        scoreCounter++;
+      }
+    }
+
+    setState(() {
+      _score = scoreCounter;
+      _showScore = true;
+    });
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('نتيجة الاختبار', textAlign: TextAlign.center),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              _score == _questions.length ? Icons.emoji_events : Icons.stars,
+              color: Colors.amber,
+              size: 50,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'حصلت على $_score من أصل ${_questions.length}',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('موافق'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _resetQuiz() {
+    setState(() {
+      _selectedAnswers.clear();
+      _showScore = false;
+      _score = 0;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('قياس المستوى الأكاديمي'), backgroundColor: Colors.indigo, foregroundColor: Colors.white),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _questions.length,
-        itemBuilder: (context, qIndex) {
-          var q = _questions[qIndex];
-          return Card(
-            margin: const EdgeInsets.only(bottom: 16),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAlignment.start,
-                children: [
-                  Text('${qIndex + 1}. ${q['question']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  ...List.generate(
-                    q['options'].length,
-                    (oIndex) => CheckboxListTile(
-                      title: Text(q['options'][oIndex]),
-                      value: _selectedAnswers[qIndex] == oIndex,
-                      onChanged: (bool? value) {
-                        setState(() {
-                          if (value == true) _selectedAnswers[qIndex] = oIndex;
-                        });
-                      },
+      appBar: AppBar(
+        title: const Text('قياس المستوى الأكاديمي'),
+        backgroundColor: Colors.indigo,
+        foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _resetQuiz,
+            tooltip: 'إعادة الاختبار',
+          )
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _questions.length,
+              itemBuilder: (context, qIndex) {
+                var q = _questions[qIndex];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  elevation: 2,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAlignment.start,
+                      children: [
+                        Text(
+                          '${qIndex + 1}. ${q['question']}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        const SizedBox(height: 8),
+                        ...List.generate(
+                          q['options'].length,
+                          (oIndex) {
+                            bool isCorrect = q['answer'] == oIndex;
+                            bool isSelected = _selectedAnswers[qIndex] == oIndex;
+
+                            Color tileColor = Colors.transparent;
+                            if (_showScore) {
+                              if (isCorrect) {
+                                tileColor = Colors.green.shade50;
+                              } else if (isSelected && !isCorrect) {
+                                tileColor = Colors.red.shade50;
+                              }
+                            }
+
+                            return Container(
+                              color: tileColor,
+                              child: RadioListTile<int>(
+                                title: Text(q['options'][oIndex]),
+                                value: oIndex,
+                                groupValue: _selectedAnswers[qIndex],
+                                activeColor: Colors.indigo,
+                                onChanged: _showScore
+                                    ? null
+                                    : (int? value) {
+                                        if (value != null) {
+                                          setState(() {
+                                            _selectedAnswers[qIndex] = value;
+                                          });
+                                        }
+                                      },
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _selectedAnswers.length < _questions.length || _showScore
+                    ? null
+                    : _calculateScore,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.indigo,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                icon: const Icon(Icons.check_circle, color: Colors.white),
+                label: const Text(
+                  'تسليم وإظهار النتيجة',
+                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
