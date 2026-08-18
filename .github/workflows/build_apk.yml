@@ -18,7 +18,7 @@ jobs:
       - name: Set up Java Development Kit (JDK)
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '17'
 
       - name: Set up Flutter SDK
@@ -27,12 +27,8 @@ jobs:
           flutter-version: '3.19.0'
           channel: 'stable'
 
-      - name: Generate Android Native Project Structure
-        run: |
-          mkdir temp_app
-          flutter create --org com.example --project-name smart_academic_assistant temp_app
-          cp -r temp_app/android ./android
-          rm -rf temp_app
+      - name: Create Android Platform
+        run: flutter create --platforms=android .
 
       - name: Add Internet Permission
         run: |
@@ -41,8 +37,8 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build APK
-        run: flutter build apk --release
+      - name: Build APK with Verbose Logs
+        run: flutter build apk --release --verbose
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
