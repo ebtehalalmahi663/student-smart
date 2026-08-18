@@ -438,8 +438,8 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAlignment.start,
-          children: [
+          crossAxisAlignment: CrossAxisAlignment.start,
+           children: [
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
