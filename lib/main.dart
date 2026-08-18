@@ -722,7 +722,7 @@ class _QuizScreenState extends State<QuizScreen> {
                   child: Padding(
                     padding: const EdgeInsets.all(12),
                     child: Column(
-                      crossAxisAlignment: CrossAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           '${qIndex + 1}. ${q['question']}',
