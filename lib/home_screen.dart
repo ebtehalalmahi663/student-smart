@@ -5,12 +5,16 @@ import 'package:file_picker/file_picker.dart';
 import 'course_model.dart';
 
 class HomeScreen extends StatefulWidget {
+  final String studentName;
   final String college;
+  final String department;
   final String semester;
 
   const HomeScreen({
     Key? key,
+    required this.studentName,
     required this.college,
+    required this.department,
     required this.semester,
   }) : super(key: key);
 
@@ -29,7 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadCourses() async {
     final prefs = await SharedPreferences.getInstance();
-    final String? coursesData = prefs.getString('saved_courses_${widget.college}_${widget.semester}');
+    final String? coursesData = prefs.getString('saved_courses_${widget.college}_${widget.department}_${widget.semester}');
     if (coursesData != null) {
       final List<dynamic> decodedList = json.decode(coursesData);
       setState(() {
@@ -41,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _saveCourses() async {
     final prefs = await SharedPreferences.getInstance();
     final String encodedData = json.encode(courses.map((c) => c.toMap()).toList());
-    await prefs.setString('saved_courses_${widget.college}_${widget.semester}', encodedData);
+    await prefs.setString('saved_courses_${widget.college}_${widget.department}_${widget.semester}', encodedData);
   }
 
   Future<void> _pickAndUploadFile(int courseIndex) async {
@@ -170,9 +174,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(width: 10),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text('مرحباً: ابتهال', style: TextStyle(fontWeight: FontWeight.bold)),
-                        Text('القسم: تقانة المعلومات', style: TextStyle(color: Colors.grey)),
+                      children: [
+                        // يعرض اسم المستخدم المكتوب في شاشة الدخول
+                        Text('مرحباً: ${widget.studentName}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                        // يعرض القسم المختار من قائمة الأقسام
+                        Text('القسم: ${widget.department}', style: const TextStyle(color: Colors.grey)),
                       ],
                     ),
                   ],
