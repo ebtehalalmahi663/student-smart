@@ -17,7 +17,7 @@ class StudentSmartApp extends StatelessWidget {
         primarySwatch: Colors.indigo,
         fontFamily: 'Roboto',
       ),
-      home: const LoginScreen(), // عاد للبدء بشاشة الدخول
+      home: const LoginScreen(),
     );
   }
 }
@@ -38,9 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => CollegeSelectionScreen(
-            studentName: _idController.text.trim(),
-          ),
+          builder: (context) => const CollegeSelectionScreen(),
         ),
       );
     }
@@ -91,12 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
 // 2. شاشة اختيار الكلية والقسم والسمستر
 class CollegeSelectionScreen extends StatefulWidget {
-  final String studentName;
-
-  const CollegeSelectionScreen({
-    Key? key,
-    required this.studentName,
-  }) : super(key: key);
+  const CollegeSelectionScreen({Key? key}) : super(key: key);
 
   @override
   State<CollegeSelectionScreen> createState() => _CollegeSelectionScreenState();
@@ -196,9 +189,7 @@ class _CollegeSelectionScreenState extends State<CollegeSelectionScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => MainNavigationScreen(
-                          studentName: widget.studentName,
                           college: selectedCollege,
-                          department: selectedDepartment,
                           semester: selectedSemester,
                         ),
                       ),
@@ -218,16 +209,12 @@ class _CollegeSelectionScreenState extends State<CollegeSelectionScreen> {
 
 // 3. شاشة التنقل الرئيسية
 class MainNavigationScreen extends StatefulWidget {
-  final String studentName;
   final String college;
-  final String department;
   final String semester;
 
   const MainNavigationScreen({
     Key? key,
-    required this.studentName,
     required this.college,
-    required this.department,
     required this.semester,
   }) : super(key: key);
 
@@ -242,9 +229,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   Widget build(BuildContext context) {
     final List<Widget> screens = [
       HomeScreen(
-        studentName: widget.studentName,
         college: widget.college,
-        department: widget.department,
         semester: widget.semester,
       ),
       const Center(child: Text('الشات الذكي')),
