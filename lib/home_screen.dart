@@ -175,9 +175,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // يعرض اسم المستخدم المكتوب في شاشة الدخول
                         Text('مرحباً: ${widget.studentName}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        // يعرض القسم المختار من قائمة الأقسام
                         Text('القسم: ${widget.department}', style: const TextStyle(color: Colors.grey)),
                       ],
                     ),
