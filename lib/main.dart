@@ -17,13 +17,86 @@ class StudentSmartApp extends StatelessWidget {
         primarySwatch: Colors.indigo,
         fontFamily: 'Roboto',
       ),
-      home: const CollegeSelectionScreen(),
+      home: const LoginScreen(), // عاد للبدء بشاشة الدخول
     );
   }
 }
 
+// 1. شاشة تسجيل الدخول
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({Key? key}) : super(key: key);
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _idController = TextEditingController();
+
+  void _login() {
+    if (_idController.text.trim().isNotEmpty) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CollegeSelectionScreen(
+            studentName: _idController.text.trim(),
+          ),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.school, size: 80, color: Colors.indigo),
+              const SizedBox(height: 20),
+              const Text(
+                'تطبيق الطالب الذكي',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.indigo),
+              ),
+              const SizedBox(height: 30),
+              TextField(
+                controller: _idController,
+                decoration: const InputDecoration(
+                  labelText: 'الرقم الجامعي / اسم المستخدم',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.person),
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _login,
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo),
+                  child: const Text('دخول', style: TextStyle(fontSize: 18, color: Colors.white)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// 2. شاشة اختيار الكلية والقسم والسمستر
 class CollegeSelectionScreen extends StatefulWidget {
-  const CollegeSelectionScreen({Key? key}) : super(key: key);
+  final String studentName;
+
+  const CollegeSelectionScreen({
+    Key? key,
+    required this.studentName,
+  }) : super(key: key);
 
   @override
   State<CollegeSelectionScreen> createState() => _CollegeSelectionScreenState();
@@ -123,7 +196,9 @@ class _CollegeSelectionScreenState extends State<CollegeSelectionScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => MainNavigationScreen(
+                          studentName: widget.studentName,
                           college: selectedCollege,
+                          department: selectedDepartment,
                           semester: selectedSemester,
                         ),
                       ),
@@ -141,13 +216,18 @@ class _CollegeSelectionScreenState extends State<CollegeSelectionScreen> {
   }
 }
 
+// 3. شاشة التنقل الرئيسية
 class MainNavigationScreen extends StatefulWidget {
+  final String studentName;
   final String college;
+  final String department;
   final String semester;
 
   const MainNavigationScreen({
     Key? key,
+    required this.studentName,
     required this.college,
+    required this.department,
     required this.semester,
   }) : super(key: key);
 
@@ -161,7 +241,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     final List<Widget> screens = [
-      HomeScreen(college: widget.college, semester: widget.semester),
+      HomeScreen(
+        studentName: widget.studentName,
+        college: widget.college,
+        department: widget.department,
+        semester: widget.semester,
+      ),
       const Center(child: Text('الشات الذكي')),
       const Center(child: Text('قياس المذاكرة')),
     ];
